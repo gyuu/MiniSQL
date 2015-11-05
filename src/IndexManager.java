@@ -54,7 +54,7 @@ public class IndexManager{
             System.err.println("the index has not been created.");
         }
 
-        //indexInfo.rootNum=thisTree.myRootBlock.blockOffset;
+        indexInfo.rootBlockOffset=thisTree.myRootBlock.blockOffset;
 //        CatalogManager.setIndexRoot(indexInfo.indexName, thisTree.myRootBlock.blockOffset);
 
         System.out.println("创建索引成功！");
@@ -76,7 +76,7 @@ public class IndexManager{
             System.out.println("删除索引失败！");
         }
 
-        //buf.setInvalid(filename);  //将buf中所有与此索引相关的缓冲块都置为无效
+        buf.setInvalid(filename);  //将buf中所有与此索引相关的缓冲块都置为无效
 
         System.out.println("删除索引成功！");
     }
@@ -107,7 +107,7 @@ public class IndexManager{
             //Index inx=CatalogManager.getIndex(indexInfo.indexName);
             BPlusTree thisTree=new BPlusTree(indexInfo,buf,indexInfo.rootBlockOffset);//创建树访问结构（但不是新树）
             thisTree.insert(key, blockOffset, offset);	//插入
-            //indexInfo.rootNum=thisTree.myRootBlock.blockOffset;//设置根块
+            indexInfo.rootBlockOffset=thisTree.myRootBlock.blockOffset;//设置根块
 //            CatalogManager.setIndexRoot(indexInfo.indexName, thisTree.myRootBlock.blockOffset);
         }catch(NullPointerException e){
             System.err.println();
@@ -121,7 +121,7 @@ public class IndexManager{
             //Index inx=CatalogManager.getIndex(indexInfo.indexName);
             BPlusTree thisTree=new BPlusTree(indexInfo,buf,indexInfo.rootBlockOffset);//创建树访问结构（但不是新树）
             thisTree.delete(deleteKey);	//删除
-            //indexInfo.rootNum=thisTree.myRootBlock.blockOffset;//设置根块
+            indexInfo.rootBlockOffset=thisTree.myRootBlock.blockOffset;//设置根块
 //            CatalogManager.setIndexRoot(indexInfo.indexName, thisTree.myRootBlock.blockOffset);
         }catch(NullPointerException e){
             System.err.println();
