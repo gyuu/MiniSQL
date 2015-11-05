@@ -299,7 +299,7 @@ class BufferNode {
             data[i] = 0;
     }
 
-    String getData(int start, int end) {
+    String getString(int start, int end) {
         byte[] tmp = new byte[end-start+1];
         for (int i=start; i<end; i++)
             tmp[i] = data[i];
@@ -310,6 +310,8 @@ class BufferNode {
     byte getByte(int pos) {
         return data[pos];
     }
+
+
 
     public static void main(String[] args) throws IOException {
     }
