@@ -38,9 +38,9 @@ class BPlusTree{
         MAX_CHILDREN_FOR_INTERNAL=MAX_FOR_LEAF;
         MIN_CHILDREN_FOR_INTERNAL=(int)Math.ceil(1.0 *(MAX_CHILDREN_FOR_INTERNAL)/ 2);
 
-        CatalogManager.setIndexRoot(indexInfo.indexName, 0);
+//        CatalogManager.setIndexRoot(indexInfo.indexName, 0);
         myIndexInfo=indexInfo;
-        CatalogManager.addIndexBlockNum(indexInfo.indexName);
+//        CatalogManager.addIndexBlockNum(indexInfo.indexName);
         myIndexInfo.blockNum++;
 
         new LeafNode(myRootBlock=BufferManager.createBlock(filename,0)); //创建该索引文件的第一块，并用LeafNode类包装它

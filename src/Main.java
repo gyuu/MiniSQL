@@ -58,3 +58,8 @@ class Row {
 class Data {
     public List<Row> rows;
 }
+
+
+class SyntaxException extends Exception {
+
+}

@@ -1,4 +1,3 @@
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
@@ -19,7 +18,7 @@ public class BufferManager {
     }
 
     // 将缓冲区中指定序号的 BufferNode 写回文件, 并将该块清空.
-    public void flashBack(int bufferIndex) throws IOException {
+    private void flashBack(int bufferIndex) throws IOException {
         if(!buffer[bufferIndex].isWritten){
             return;
         }
@@ -31,70 +30,70 @@ public class BufferManager {
         fout.close();
     }
 
-    // 根据文件名和块偏移, 寻找该文件中某块在 buffer 中的序号.如果不存在,返回 -1.
-    public int getIfIsInBuffer(String fileName, int blockOffset) {
+    // 根据文件名和块偏移, 寻找 buffer 中该块, 如果存在,返回该块,否则返回 null。
+    private BufferNode getIfIsInBuffer(String fileName, int blockOffset) {
         for (int bufferIndex=0; bufferIndex<BUFFER_SIZE; bufferIndex++)
             if (buffer[bufferIndex].fileName.equals(fileName) && buffer[bufferIndex].blockOffset == blockOffset)
-                return bufferIndex;
-        return -1;
+                return buffer[bufferIndex];
+        return null;
     }
 
-    // 如果指定块不在 buffer 中,将其读入 buffer 中, 返回序号.
-    public int getBufferIndex(String fileName, int blockOffset) {
-        int bufferIndex = getIfIsInBuffer(fileName, blockOffset);
-        if (bufferIndex == -1) {
+    // 根据文件名和块偏移, 返回该块.
+    public BufferNode getBufferNode(String fileName, int blockOffset) {
+        BufferNode node = getIfIsInBuffer(fileName, blockOffset);
+        if (node == null) {
             try {
-                bufferIndex = getEmptyBufferExcept(fileName);
-                readBlock(fileName, blockOffset, bufferIndex);
+                node = getEmptyBufferNodeExcept(fileName);
+                readBlock(fileName, blockOffset, node);
             }
             catch (IOException e){
                 System.out.println("BufferManager: Requested file not found.");
                 exit(0);
             }
         }
-        return bufferIndex;
+        return node;
     }
 
-    // 读入指定的块到 buffer 中.
-    public void readBlock(String fileName, int blockOffset, int bufferIndex) throws IOException {
-        buffer[bufferIndex].isValid = true;
-        buffer[bufferIndex].isWritten = false;
-        buffer[bufferIndex].fileName = fileName;
-        buffer[bufferIndex].blockOffset = blockOffset;
+    // 读入指定的块到 buffer 中指定的 node.
+    public void readBlock(String fileName, int blockOffset, BufferNode node) throws IOException {
+        node.isValid = true;
+        node.isWritten = false;
+        node.fileName = fileName;
+        node.blockOffset = blockOffset;
         RandomAccessFile fin = new RandomAccessFile(fileName, "r");
-        fin.seek(buffer[bufferIndex].blockOffset * BLOCK_SIZE);
+        fin.seek(node.blockOffset * BLOCK_SIZE);
         // read 在读取 data.length 个字节就结束读取.
-        fin.read(buffer[bufferIndex].data);
+        fin.read(node.data);
         fin.close();
+        writeBlock(node); // 将该块标记为已修改.
     }
 
-    // 把一个块标记为已更新过, 可以写回文件.
-    public void writeBlock(int bufferIndex) {
-        buffer[bufferIndex].isWritten = true;
-        useBlock(bufferIndex);
+    // 把一个块标记为已更新过, 并标记为最近使用.
+    private void writeBlock(BufferNode node) {
+        node.isWritten = true;
+        useBlock(node);
     }
 
     // LRU 算法代价较高, 每次写一个块时, 将其 LRUValue 置为0, 将其他的全部块 LRUValue 递增.
-    public void useBlock(int bufferIndex) {
+    public void useBlock(BufferNode node) {
+        node.LRUValue = 0;
+        node.isValid = true;
         for (int i=0; i<BUFFER_SIZE; i++) {
-            if (i == bufferIndex){
-                buffer[bufferIndex].LRUValue = 0;
-                buffer[bufferIndex].isValid = true;
-            }
-            else
+            if (buffer[i] != node)
                 buffer[i].LRUValue++; // LRUValue 越大, 说明最近访问越少.
         }
     }
 
-    // 找出非 Valid 或者 LURValue 最高的块, 将其替换出去.
-    public int getEmptyBuffer() throws IOException {
+    // 找出非 Valid(表示该块中存的数据是已经被删除的表或索引) 或者 LURValue 最高的块, 将其替换出去.
+    // 返回一个新的可用的 block.
+    public BufferNode getEmptyBufferNode() throws IOException {
         int bufferIndex = 0;
         int maxLRUValue = buffer[0].LRUValue;
 
         for (int i=0; i<BUFFER_SIZE; i++) {
             if (!buffer[i].isValid){
                 buffer[i].isValid = true;
-                return i;
+                return buffer[i];
             }
             else if (buffer[i].LRUValue > maxLRUValue) {
                 maxLRUValue = buffer[i].LRUValue;
@@ -103,17 +102,17 @@ public class BufferManager {
         }
         flashBack(bufferIndex);
         buffer[bufferIndex].isValid = true;
-        return bufferIndex;
+        return buffer[bufferIndex];
     }
 
     // 也是替换块, 但是限制了相同文件名的块无法被替换出去.
-    public int getEmptyBufferExcept(String fileName) throws IOException {
+    public BufferNode getEmptyBufferNodeExcept(String fileName) throws IOException {
         int bufferIndex = -1;
         int maxLRUValue = buffer[0].LRUValue;
         for (int i=0; i<BUFFER_SIZE; i++){
             if (!buffer[i].isValid){
                 buffer[i].isValid = true;
-                return i;
+                return buffer[i];
             }
             // 缓冲区中相同文件名的块不能被替换?
             else if (buffer[i].LRUValue > maxLRUValue && !buffer[i].fileName.equals(fileName)){
@@ -126,7 +125,7 @@ public class BufferManager {
 
         flashBack(bufferIndex);
         buffer[bufferIndex].isValid = true;
-        return bufferIndex;
+        return buffer[bufferIndex];
     }
 
     public void setInvalid(String fileName) {
@@ -138,68 +137,36 @@ public class BufferManager {
         }
     }
 
-    // 给记录对应的文件中增加一个块, 将新块的信息写入缓冲区, 但还并未写入文件.
-    public int addBlockInFile(Table table_info) throws IOException {
-        int bufferIndex = getEmptyBuffer();
-        buffer[bufferIndex].initialize();
-        buffer[bufferIndex].isValid = true;
-        buffer[bufferIndex].isWritten = true;
-        buffer[bufferIndex].fileName = table_info.name + ".rec";
-        buffer[bufferIndex].blockOffset = table_info.blockNum++;
-        return bufferIndex;
+    // 给记录对应的文件中增加一个块, 返回这个块.
+    public BufferNode addBlockInFile(Table table_info) throws IOException {
+        BufferNode node = getEmptyBufferNode();
+        node.initialize();
+        node.isValid = true;
+        node.isWritten = true;
+        node.fileName = table_info.name + ".rec";
+        node.blockOffset = table_info.blockNum++;
+        return node;
     }
 
     // 给索引对应的文件增加一个块.
-    public int addBlockInFile(Index index_info) throws IOException {
+    public BufferNode addBlockInFile(Index index_info) throws IOException {
         String fileName = index_info.indexName + ".idx";
-        int bufferIndex = getEmptyBufferExcept(fileName);
-        buffer[bufferIndex].initialize();
-        buffer[bufferIndex].isValid = true;
-        buffer[bufferIndex].isWritten = true;
-        buffer[bufferIndex].fileName = fileName;
-        buffer[bufferIndex].blockOffset = index_info.blockNum++;
-        return bufferIndex;
-    }
-
-    // 这个函数还是意义不明.
-    public InsertPos getInsertPosition(Table table_info) throws IOException {
-        InsertPos pos = new InsertPos();
-        if (table_info.blockNum == 0) {
-            pos.bufferIndex = addBlockInFile(table_info);
-            pos.position = 0;
-            return pos;
-        }
-        String fileName = table_info.name + ".rec";
-        int length = table_info.totalLength+1;
-        int blockOffset = table_info.blockNum-1;
-        int bufferIndex = getIfIsInBuffer(fileName, blockOffset);
-        if (bufferIndex == -1) {
-            bufferIndex = getEmptyBuffer();
-            readBlock(fileName, blockOffset, bufferIndex);
-        }
-        int recordNum = BLOCK_SIZE / length;
-        for (int offset = 0; offset < recordNum; offset++) {
-            int curr_position = offset * length;
-            byte isEmpty = buffer[bufferIndex].data[curr_position];
-            if (isEmpty == EMPTY_FLAG) {
-                pos.bufferIndex = bufferIndex;
-                pos.position = curr_position;
-                return pos;
-            }
-        }
-
-        pos.bufferIndex = addBlockInFile(table_info);
-        pos.position = 0;
-        return pos;
+        BufferNode node = getEmptyBufferNodeExcept(fileName);
+        node.initialize();
+        node.isValid = true;
+        node.isWritten = true;
+        node.fileName = fileName;
+        node.blockOffset = index_info.blockNum++;
+        return node;
     }
 
     // 读取表中的所有记录.
     public void readWholeTable(Table table_info) throws IOException {
         String fileName = table_info.name + ".rec";
         for (int blockOffset=0; blockOffset < table_info.blockNum; blockOffset++) {
-            if (getIfIsInBuffer(fileName, blockOffset) == -1) {
-                int bufferIndex = getEmptyBufferExcept(fileName);
-                readBlock(fileName, blockOffset, bufferIndex);
+            if (getIfIsInBuffer(fileName, blockOffset) == null) {
+                BufferNode node = getEmptyBufferNodeExcept(fileName);
+                readBlock(fileName, blockOffset, node);
             }
         }
     }
@@ -222,49 +189,8 @@ public class BufferManager {
 
     // for test.
     public static void main(String[] args) throws IOException {
-
-        String fileName = "test";
-        File f = new File(fileName);
-        if (f.exists())
-            f.delete();
-        f.createNewFile();
-
         BufferManager bm = new BufferManager();
-        byte[] data = new byte[BLOCK_SIZE];
-
-
-        // 测试 flashBack, readBlock 和 LRU, 测试成功.
-        for (int i=0; i<5; i++){
-            data[i] = (byte)i;
-            bm.buffer[i].fileName = fileName;
-            bm.buffer[i].blockOffset = i;
-            bm.buffer[i].data = data;
-        }
         bm.showBuffer(0, 5);
-        for (int i=4; i>=0; i--) {
-            bm.writeBlock(i);
-            bm.flashBack(i);
-            bm.readBlock(fileName, i, i);
-        }
-        bm.showBuffer(0, 5);
-        int buf_index = bm.getEmptyBuffer();
-        System.out.println(buf_index);
-
-
-//        for (byte b : bm.buffer[3].data){
-//            if (b != 0)
-//                System.out.println(b);
-//        }
-
-//        int buf_index = bm.getBufferIndex(fileName, 0);
-//        System.out.println(buf_index);
-//
-//        buf_index = bm.getBufferIndex(fileName, 1);
-//        System.out.println(buf_index);
-
-//        // 对于不存在的文件名, 打印 Requested file not found, 退出程序.
-//        buf_index = bm.getBufferIndex("2333", 0);
-//        System.out.println(buf_index);
     }
 }
 
@@ -315,9 +241,4 @@ class BufferNode {
 
     public static void main(String[] args) throws IOException {
     }
-}
-
-class InsertPos {
-    int bufferIndex;
-    int position;
 }
