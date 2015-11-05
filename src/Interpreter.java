@@ -87,7 +87,8 @@ public class Interpreter
                             unique = true;
                             word  = get_word(s);
                         }
-                        Attribute attr = new Attribute(attribute_name, type,unique);
+                        // problem!!!
+                        Attribute attr = new Attribute(attribute_name, type, 32, false,unique);
                         attribute_list.add(attr);
                         if (!word.equals(","))
                         {

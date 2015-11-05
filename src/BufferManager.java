@@ -31,7 +31,7 @@ public class BufferManager {
     }
 
     // 根据文件名和块偏移, 寻找 buffer 中该块, 如果存在,返回该块,否则返回 null。
-    private BufferNode getIfIsInBuffer(String fileName, int blockOffset) {
+    public BufferNode getIfIsInBuffer(String fileName, int blockOffset) {
         for (int bufferIndex=0; bufferIndex<BUFFER_SIZE; bufferIndex++)
             if (buffer[bufferIndex].fileName.equals(fileName) && buffer[bufferIndex].blockOffset == blockOffset)
                 return buffer[bufferIndex];
@@ -51,6 +51,14 @@ public class BufferManager {
                 exit(0);
             }
         }
+        return node;
+    }
+
+    // 根据文件名和块偏移, 申请一个块并将其初始化.
+    public BufferNode createBufferNode(String fileName, int blockOffset) throws IOException {
+        BufferNode node = getEmptyBufferNode();
+        node.fileName = fileName;
+        node.blockOffset = blockOffset;
         return node;
     }
 
@@ -75,7 +83,7 @@ public class BufferManager {
     }
 
     // LRU 算法代价较高, 每次写一个块时, 将其 LRUValue 置为0, 将其他的全部块 LRUValue 递增.
-    public void useBlock(BufferNode node) {
+    private void useBlock(BufferNode node) {
         node.LRUValue = 0;
         node.isValid = true;
         for (int i=0; i<BUFFER_SIZE; i++) {
@@ -143,14 +151,14 @@ public class BufferManager {
         node.initialize();
         node.isValid = true;
         node.isWritten = true;
-        node.fileName = table_info.name + ".rec";
+        node.fileName = table_info.name + ".table";
         node.blockOffset = table_info.blockNum++;
         return node;
     }
 
     // 给索引对应的文件增加一个块.
     public BufferNode addBlockInFile(Index index_info) throws IOException {
-        String fileName = index_info.indexName + ".idx";
+        String fileName = index_info.indexName + ".index";
         BufferNode node = getEmptyBufferNodeExcept(fileName);
         node.initialize();
         node.isValid = true;
@@ -162,7 +170,7 @@ public class BufferManager {
 
     // 读取表中的所有记录.
     public void readWholeTable(Table table_info) throws IOException {
-        String fileName = table_info.name + ".rec";
+        String fileName = table_info.name + ".table";
         for (int blockOffset=0; blockOffset < table_info.blockNum; blockOffset++) {
             if (getIfIsInBuffer(fileName, blockOffset) == null) {
                 BufferNode node = getEmptyBufferNodeExcept(fileName);
@@ -233,10 +241,50 @@ class BufferNode {
         return res;
     }
 
-    byte getByte(int pos) {
-        return data[pos];
+    public void setInt(int pos, int length,int sourceInt){
+
+        for(int i=0;i<length;i++){
+            data[i+pos]=(byte)(sourceInt>>8*(3-i)&0xFF);
+        }
+        isWritten = true;
     }
 
+    public int getInt(int pos, int length){
+        int k=0;
+        for(int i=0;i<length;i++){
+            k  +=(data[i+pos] & 0xFF)<<(8*(3-i));
+        }
+        return k;
+    }
+
+    public byte[] getBytes(int startpos, int length){
+        byte[] b = new byte[length];
+        for(int i =0;i<length;i++){
+            b[i]=data[startpos+i];
+        }
+        return b;
+    }
+
+    public void setBytes(int startpos, byte[] sourcebyte){
+        //byte[] b = new byte[length];
+        for(int i =0;i<sourcebyte.length;i++){
+            data[startpos+i]=sourcebyte[i];
+        }
+        isWritten=true;
+    }
+
+    public void setInternalKey(int pos,byte[] key,int offset) {
+        setBytes(pos,key);
+        setInt(pos+key.length,4,offset);
+        isWritten=true;
+    }
+
+    public  void setKeyData(int pos,byte[] insertKey,int blockOffset,int offset) {
+        setInt(pos,4,blockOffset);
+        setInt(pos+4,4,offset);
+        setBytes(pos+8,insertKey);
+        isWritten=true;
+    }
 
 
     public static void main(String[] args) throws IOException {

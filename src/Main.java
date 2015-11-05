@@ -49,6 +49,7 @@ class Index {
     int columnIndex;
     int columnLength;
     int blockNum;
+    int rootBlockOffset;
 }
 
 class Row {
