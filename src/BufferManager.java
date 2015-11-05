@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
@@ -18,8 +19,7 @@ public class BufferManager {
     }
 
     public void WriteAllToFile() throws IOException {
-        for (int i=0; i<BLOCK_SIZE; i++) {
-            buffer[i].isWritten = true;
+        for (int i=0; i<BUFFER_SIZE; i++) {
             flashBack(i);
         }
     }
@@ -217,7 +217,7 @@ class BufferNode {
     public String fileName;
     public int blockOffset;
     public int LRUValue;
-    public byte[] data = new byte[BLOCK_SIZE+1];
+    public byte[] data = new byte[BLOCK_SIZE];
 
 //  不可使用默认初始化,因为字符串为 null 的话会很麻烦.
 
