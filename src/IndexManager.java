@@ -40,6 +40,7 @@ public class IndexManager{
                 BufferNode block = buf.getBufferNode(filename, blockOffset);
                 int recordNum = 4096 / tableInfo.totalLength; // int recordNum = block.recordNum;
                 for(int offset =0; offset < recordNum /*tableInfo.maxPerRecordNum*/; offset++){
+                    // 这里读取记录还有些问题, 涉及到记录在文件中的存储.
                     int position = offset*tableInfo.totalLength;
                     byte[] Record = block.getBytes(position, tableInfo.totalLength); //读取表中的每条记录
                     //if(Record.isEmpty()) break;

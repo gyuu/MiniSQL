@@ -17,6 +17,13 @@ public class BufferManager {
             buffer[i] = new BufferNode();
     }
 
+    public void WriteAllToFile() throws IOException {
+        for (int i=0; i<BLOCK_SIZE; i++) {
+            buffer[i].isWritten = true;
+            flashBack(i);
+        }
+    }
+
     // 将缓冲区中指定序号的 BufferNode 写回文件, 并将该块清空.
     private void flashBack(int bufferIndex) throws IOException {
         if(!buffer[bufferIndex].isWritten){
