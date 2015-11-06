@@ -1,4 +1,5 @@
 import java.io.*;
+import java.nio.ByteBuffer;
 
 /**
  * Created by gyuu on 15/11/5.
@@ -11,6 +12,7 @@ class BPlusTree{
     private int MIN_FOR_LEAF;  //叶子节点的最小索引数
     private int MAX_FOR_LEAF;  //叶子节点的最大索引数
 
+    public int keyType;
     public BufferManager bm;
     public String filename;
     public BufferNode myRootBlock;  //根块
@@ -20,6 +22,7 @@ class BPlusTree{
     BPlusTree(Index indexInfo, BufferManager buffer) throws IOException {
 
         bm = buffer;
+        keyType = indexInfo.type;
 
         //新建索引文件
         try{
@@ -53,6 +56,7 @@ class BPlusTree{
     //构造构造函数2
     BPlusTree(Index indexInfo, BufferManager buffer, int rootBlockNum){
         bm = buffer;
+        keyType = indexInfo.type;
         int columnLength=indexInfo.columnLength;
         MAX_FOR_LEAF=(int)Math.floor((4096.0-1/*叶子标记*/-4/*键值数*/-POINTERLENGTH/*父亲块号*/-POINTERLENGTH/*下一块叶子块的块号*/)/(8+columnLength));
         MIN_FOR_LEAF=(int)Math.ceil(1.0 * MAX_FOR_LEAF/ 2);
@@ -172,16 +176,28 @@ class BPlusTree{
         abstract offsetInfo searchKey(byte[] Key);
     }
 
+    // 根据 key 的不同类型比较相对大小.
     public int compareTo(byte[] buffer1,byte[] buffer2) {
-
-        for (int i = 0, j = 0; i < buffer1.length && j < buffer2.length; i++, j++) {
-            int a = (buffer1[i] & 0xff);
-            int b = (buffer2[j] & 0xff);
-            if (a != b) {
-                return a - b;
+        if (keyType <= 0) { // -1 for int, 0 for float.
+            ByteBuffer buf = ByteBuffer.allocate(8);
+            buf.put(buffer1);
+            buf.put(buffer2);
+            if (keyType == -1){
+                int num1 = buf.getInt();
+                int num2 = buf.getInt();
+                return num1 - num2;
+            }
+            else {
+                float num1 = buf.getFloat();
+                float num2 = buf.getFloat();
+                return (int)(num1 - num2);
             }
         }
-        return buffer1.length - buffer2.length;
+        else { // 1-255 for char.
+            String s1 = new String(buffer1);
+            String s2 = new String(buffer2);
+            return s1.compareTo(s2);
+        }
     }
 
     //中间节点类
@@ -956,9 +972,9 @@ class BPlusTree{
     }
 
     public static void main(String[] args) throws IOException {
-        Index index_info = new Index();
-        BufferManager bm = new BufferManager();
-        BPlusTree tree = new BPlusTree(index_info, bm);
+        //Index index_info = new Index();
+        //BufferManager bm = new BufferManager();
+        //BPlusTree tree = new BPlusTree(index_info, bm);
 
     }
 

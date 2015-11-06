@@ -1,4 +1,4 @@
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 // 数据结构都定义在这里, 之后可能找个别的地方放.
@@ -24,11 +24,12 @@ class Attribute {
         index = "";
     }
 
-    public Attribute(String n, int t, boolean isPr, boolean isUn) {
+    public Attribute(String n, int t, boolean isPr, boolean isUn, String idx) {
         name = n;
         type = t;
         isPrimaryKey = isPr;
         isUnique = isUn;
+        index = idx;
         switch (type) {
             case -1:
             case 0:
@@ -46,7 +47,40 @@ class Table {
     int blockNum;
     int attrNum;
     int totalLength;
-    List<Attribute> attributes = new LinkedList<>();
+    int nextInsertBlock;
+    List<Attribute> attributes = new ArrayList<>();
+
+    public Table() {
+        blockNum = 0;
+        attrNum = 0;
+        totalLength = 0;
+        nextInsertBlock = 0;
+    }
+
+    public Table(String name, List<Attribute> attributes) {
+        this.name = name;
+        this.attributes = attributes;
+        blockNum = 0;
+        attrNum = attributes.size();
+        nextInsertBlock = 0;
+        totalLength = 0;
+        for (Attribute attr : attributes) {
+            if (attr.type <= 0)
+                totalLength += 4;
+            else
+                totalLength += attr.type;
+        }
+    }
+
+    public Table(String name, int blockNum, int attrNum, int totalLength,
+                 int nextInsertBlock, List<Attribute> attributes) {
+        this.name = name;
+        this.blockNum = blockNum;
+        this.attrNum = attrNum;
+        this.totalLength = totalLength;
+        this.nextInsertBlock = nextInsertBlock;
+        this.attributes = attributes;
+    }
 }
 
 class Index {
@@ -54,21 +88,71 @@ class Index {
     public String tableName;
 
     // 索引属性在 Table.attributes 中的序号.
-    int columnIndex;
-    int columnLength;
+    public int columnIndex;
+    public int pos;
+    public int columnLength;
     int blockNum;
     int rootBlockOffset;
-}
+    int type;
 
-class Row {
-    public List<String> columns;
+    public Index() {}
+
+    public Index(String indexName, String tableName, int type) {
+        this.indexName = indexName;
+        this.tableName = tableName;
+        this.type = type;
+        columnIndex = 0;
+        pos = 0;
+        columnLength = 0;
+        blockNum = 0;
+        rootBlockOffset = 0;
+    }
+
+    public Index(String indexName, String tableName, int columnIndex,
+                 int pos, int columnLength, int blockNum,
+                 int rootBlockOffset, int type) {
+        this.indexName = indexName;
+        this.tableName = tableName;
+        this.columnIndex = columnIndex;
+        this.pos = pos;
+        this.columnLength = columnLength;
+        this.blockNum = blockNum;
+        this.rootBlockOffset = rootBlockOffset;
+        this.type = type;
+    }
 }
 
 class Data {
-    public List<Row> rows;
+    public ArrayList<Row> rows;
+
+    public Data() {
+        rows = new ArrayList<Row>();
+    }
+
+    public void add(Row row) {
+        rows.add(row);
+    }
+
+    public boolean isEmpty() {
+        return rows.isEmpty();
+    }
 }
 
+class Row {
+    public String[] columns;
 
-class SyntaxException extends Exception {
+    public Row() {}
 
+    public Row(String[] columns) {
+        this.columns = columns;
+    }
 }
+
+class SyntaxException extends Exception {}
+class TableExistedException extends Exception {}
+class IndexExistedException extends Exception {}
+class TableNotFoundException extends Exception {}
+class AttributeNotFoundException extends Exception {}
+class UniqueKeyException extends Exception {}
+class AttributeNumberException extends Exception {}
+class AttributeFormatException extends Exception {}

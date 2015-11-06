@@ -229,6 +229,7 @@ class BufferNode {
     public int blockOffset;
     public int LRUValue;
     public byte[] data = new byte[BLOCK_SIZE];
+    private boolean isLocked;
 
 //  不可使用默认初始化,因为字符串为 null 的话会很麻烦.
 
@@ -238,6 +239,7 @@ class BufferNode {
         fileName = "";
         blockOffset = 0;
         LRUValue = 0;
+        isLocked = false;
     }
 
     public void initialize() {
@@ -249,6 +251,14 @@ class BufferNode {
         // 清空字节数组.
         for (int i=0; i< BLOCK_SIZE; i++)
             data[i] = 0;
+    }
+
+    public void lock() {
+        isLocked = true;
+    }
+
+    public void unlock() {
+        isLocked = false;
     }
 
     String getString(int start, int end) {

@@ -1,5 +1,3 @@
-
-
 public class Condition {
     final static int OPERATION_EQUAL = 0;
     final static int OPERATION_NOT_EQUAL = 1;
@@ -35,9 +33,9 @@ public class Condition {
             case OPERATION_MORE:
                 return content > tmp;
             case OPERATION_LESS_EQUAL:
-                return content >= tmp;
-            case OPERATION_MORE_EQUAL:
                 return content <= tmp;
+            case OPERATION_MORE_EQUAL:
+                return content >= tmp;
             default:
                 return true;
         }
@@ -59,9 +57,9 @@ public class Condition {
             case OPERATION_MORE:
                 return content > tmp;
             case OPERATION_LESS_EQUAL:
-                return content >= tmp;
-            case OPERATION_MORE_EQUAL:
                 return content <= tmp;
+            case OPERATION_MORE_EQUAL:
+                return content >= tmp;
             default:
                 return true;
         }

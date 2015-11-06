@@ -8,8 +8,8 @@ public class IndexManager{
 
     public static BufferManager  buf;
 
-    IndexManager(BufferManager buffer){
-        buf=buffer;
+    public void setBM(BufferManager bm) {
+        buf = bm;
     }
 
     //找出需要插入的索引值
@@ -153,6 +153,7 @@ public class IndexManager{
 
     public static void main(String[] args) throws Exception {
 
+        /*
         BufferManager bm = new BufferManager();
         IndexManager im = new IndexManager(bm);
 
@@ -174,6 +175,7 @@ public class IndexManager{
         id_index.columnIndex = 0;
         id_index.indexName = "Person_id";
         id_index.columnLength = 4;
+        */
 //        id_index.rootBlockOffset = 2;
 
 //         测试等值查找.

@@ -1,14 +1,19 @@
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.io.IOException;
 
 public class Interpreter
 {
 
     static int pos=0;
-
+    private static BufferManager bm;
+    private static IndexManager im;
+    private static CatalogManager cm;
+    private static RecordManager rm;
 
     public static int interprete(String s)
+        throws TableExistedException, IndexExistedException, Exception
     {
         int tmp = 0;
         String word = "";
@@ -41,7 +46,7 @@ public class Interpreter
                 else
                 {
                     word = get_word(s);
-                    List<Attribute> attribute_list = new LinkedList<Attribute>();
+                    ArrayList<Attribute> attribute_list = new ArrayList<Attribute>();
                     while (!word.isEmpty() && !word.equals("primary") && !word.equals(")"))
                     {
                         String attribute_name = word;
@@ -49,9 +54,9 @@ public class Interpreter
                         boolean isUnique = false;
                         word = get_word(s);
                         if (word.equals("int"))
-                            type = 0;
-                        else if (word.equals("float"))
                             type = -1;
+                        else if (word.equals("float"))
+                            type = 0;
                         else if (word.equals("char"))
                         {
                             word = get_word(s);
@@ -88,7 +93,7 @@ public class Interpreter
                             word  = get_word(s);
                         }
                         // problem!!!
-                        Attribute attr = new Attribute(attribute_name, type, false,isUnique);
+                        Attribute attr = new Attribute(attribute_name, type, false, isUnique, "");
                         attribute_list.add(attr);
                         if (!word.equals(","))
                         {
@@ -123,6 +128,7 @@ public class Interpreter
                                 {
                                     if (primary_key.equals(attribute_list.get(i).name))
                                     {
+                                        attribute_list.get(i).isPrimaryKey = true;
                                         attribute_list.get(i).isUnique = true;
                                         break;
                                     }
@@ -158,6 +164,9 @@ public class Interpreter
                         System.out.println("Syntax Error: a ) is needed!");
                         return 0;
                     }
+
+                    /* Create table */
+                    cm.createTable(table_name, attribute_list);
 
                     System.out.println("Table is created!");
                     return 1;
@@ -196,8 +205,12 @@ public class Interpreter
                         throw new SyntaxException();
                     attribute_name = word;
                     word = get_word(s);
-                    if (word.equals(")"))
+                    if (!word.equals(")"))
                         throw new SyntaxException();
+
+                    /* create index */
+                    cm.createIndex(index_name, table_name, attribute_name);
+
                     System.out.println("Index created");
                     return 1;
                 } catch (SyntaxException e) {
@@ -214,7 +227,7 @@ public class Interpreter
 
         else if (word.equals("select"))
         {
-            List<String> attr_selected = new LinkedList<String>();
+            List<String> attr_selected = new ArrayList<String>();
             String table_name;
             word = get_word(s);
             if (!word.equals("*"))
@@ -246,6 +259,8 @@ public class Interpreter
             word = get_word(s);
             if (word.isEmpty())
             {
+                rm.selectRecord(table_name);
+
                 if (attr_selected.size() == 0)
                     System.out.println("Show Record!");
                 else
@@ -257,7 +272,7 @@ public class Interpreter
                 String attr_name = "";
                 String value = "";
                 int operate = Condition.OPERATION_EQUAL;
-                List<Condition> condition_list = new LinkedList<Condition>();
+                ArrayList<Condition> condition_list = new ArrayList<Condition>();
                 word = get_word(s);
                 while (true)
                 {
@@ -297,6 +312,8 @@ public class Interpreter
                         return 0;
                     }
                 }
+
+                rm.selectRecord(table_name, condition_list);
                 if (attr_selected.size() == 0)
                     System.out.println("Selected!");
                 else
@@ -313,6 +330,9 @@ public class Interpreter
                 word = get_word(s);
                 if (!word.isEmpty())
                 {
+                    String tableName = word;
+                    cm.dropTable(tableName);
+
                     System.out.println("Drop table!");
                     return 1;
                 }
@@ -327,6 +347,9 @@ public class Interpreter
                 word = get_word(s);
                 if (!word.isEmpty())
                 {
+                    String indexName = word;
+                    cm.dropIndex(indexName);
+
                     System.out.println("Drop index!");
                     return 1;
                 }
@@ -365,7 +388,12 @@ public class Interpreter
             word = get_word(s);
             if (word.isEmpty())
             {
-                System.out.println("Delete table!");
+                int deleteNum = rm.deleteRecord(table_name);
+                if (deleteNum > 0)
+                    System.out.println("Deleted " + deleteNum + " records.");
+                else
+                    System.out.println("Nothing was deleted.");
+
                 return 1;
             }
             else if (word.equals("where"))
@@ -373,7 +401,7 @@ public class Interpreter
                 String attr_name = "";
                 String value = "";
                 int operate = Condition.OPERATION_EQUAL;
-                List<Condition> condition_list = new LinkedList<Condition>();
+                List<Condition> condition_list = new ArrayList<Condition>();
                 word = get_word(s);
                 while (true)
                 {
@@ -414,7 +442,11 @@ public class Interpreter
                     }
                 }
 
-                System.out.println("Deleted!");
+                int deleteNum = rm.deleteRecord(table_name, condition_list);
+                if (deleteNum > 0)
+                    System.out.println("Deleted " + deleteNum + " records.");
+                else
+                    System.out.println("Nothing was deleted.");
                 return 1;
             }
         }
@@ -422,7 +454,7 @@ public class Interpreter
         else if (word.equals("insert"))
         {
             String table_name = "";
-            List<String> value_list = new LinkedList<String>();
+            List<String> value_list = new ArrayList<String>();
             word = get_word(s);
             try{
                 if (!word.equals("into"))
@@ -432,10 +464,10 @@ public class Interpreter
                     throw new SyntaxException();
                 table_name = word;
                 word = get_word(s);
-                if (!word.equals("value"))
+                if (!word.equals("values"))
                     throw new SyntaxException();
                 word = get_word(s);
-                if (word.equals("("))
+                if (!word.equals("("))
                     throw new SyntaxException();
                 word = get_word(s);
                 while (!word.isEmpty() && !word.equals(")"))
@@ -451,7 +483,8 @@ public class Interpreter
                 System.out.println("Syntax Error!");
                 return 0;
             }
-            System.out.println("Table inserted!");
+            rm.insertRecord(table_name, value_list);
+            System.out.println("Record inserted!");
             return 1;
         }
 
@@ -519,11 +552,45 @@ public class Interpreter
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        bm = new BufferManager();
+        im = new IndexManager();
+        cm = new CatalogManager();
+        rm = new RecordManager();
+
+        im.setBM(bm);
+        cm.setIMRM(im, rm);
+        rm.setBMCMIM(bm, cm, im);
+
+        System.out.println("Welcome to MiniSQL!");
         Scanner in = new Scanner(System.in);
-        String quest = "";
-        quest = in.nextLine();
-        interprete(quest);
+        String quest = "",tmp_quest="";
+
+        while (true) {
+            quest = "";
+            tmp_quest = "";
+            pos = 0;
+            int return_code = 0;
+            tmp_quest = in.nextLine();
+            while (tmp_quest.charAt(tmp_quest.length() - 1) != ';') {
+                quest = quest + " " + tmp_quest;
+                tmp_quest = in.nextLine();
+            }
+            quest = quest + " " + tmp_quest;
+            quest = quest.substring(0,quest.length()-1);
+            try {
+                return_code = interprete(quest);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                cm.close();
+                bm.WriteAllToFile();
+            }
+            if (return_code == -1){
+                System.out.println("Bye");
+                return;
+            }
+        }
     }
 
 }
