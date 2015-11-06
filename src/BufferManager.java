@@ -26,7 +26,7 @@ public class BufferManager {
 
     // 将缓冲区中指定序号的 BufferNode 写回文件, 并将该块清空.
     private void flashBack(int bufferIndex) throws IOException {
-        if(!buffer[bufferIndex].isWritten){
+        if(!buffer[bufferIndex].isWritten || !buffer[bufferIndex].isValid){
             return;
         }
         String filename = buffer[bufferIndex].fileName;
@@ -50,7 +50,7 @@ public class BufferManager {
         BufferNode node = getIfIsInBuffer(fileName, blockOffset);
         if (node == null) {
             try {
-                node = getEmptyBufferNodeExcept(fileName);
+                node = getEmptyBufferNode();
                 readBlock(fileName, blockOffset, node);
             }
             catch (IOException e){
@@ -66,6 +66,7 @@ public class BufferManager {
         BufferNode node = getEmptyBufferNode();
         node.fileName = fileName;
         node.blockOffset = blockOffset;
+        node.isWritten = true;
         return node;
     }
 
@@ -136,7 +137,10 @@ public class BufferManager {
             }
         }
         // if no bufferNode can be replaced, break down.
-        assert bufferIndex != -1 : "Buffer out of space, unable to allocate new room.";
+        if (bufferIndex == -1){
+            System.err.println("Buffer out of space, unable to allocate new room.");
+            exit(1);
+        }
 
         flashBack(bufferIndex);
         buffer[bufferIndex].isValid = true;

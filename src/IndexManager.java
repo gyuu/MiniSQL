@@ -29,7 +29,7 @@ public class IndexManager{
     }
 
     //创建索引
-    public static void createIndex(Table tableInfo,Index indexInfo) throws IOException { //需要API提供表和索引信息结构
+    public void createIndex(Table tableInfo,Index indexInfo) throws IOException { //需要API提供表和索引信息结构
 
         BPlusTree thisTree=new BPlusTree(indexInfo, buf); //创建一棵新树
 
@@ -38,31 +38,41 @@ public class IndexManager{
         try{
             for(int blockOffset=0; blockOffset< tableInfo.blockNum; blockOffset++){
                 BufferNode block = buf.getBufferNode(filename, blockOffset);
-                int recordNum = 4096 / tableInfo.totalLength; // int recordNum = block.recordNum;
+
+                int recordNum = 0; // 每个块的头两个字节存储该块中的记录数量(不包括被删除的).
+                recordNum += (block.data[2] & 0xFF) << 8;
+                recordNum += (block.data[3] & 0xFF);
+
                 for(int offset =0; offset < recordNum /*tableInfo.maxPerRecordNum*/; offset++){
-                    // 这里读取记录还有些问题, 涉及到记录在文件中的存储.
-                    int position = offset*tableInfo.totalLength;
-                    byte[] Record = block.getBytes(position, tableInfo.totalLength); //读取表中的每条记录
-                    //if(Record.isEmpty()) break;
-                    byte[] key=getColumnValue(tableInfo,indexInfo,Record); //找出索引值
+                    // 每条记录存储时,数据前面留 1 个字节,后面附加 2 个字节有其他用处.因此每条记录实际占 totalLength+3 字节.
+                    int position = 4 + offset * (tableInfo.totalLength + 3);
+                    // 每条记录第 1 个个字节如果为 0, 表示已被删除, 如果为 1, 表示可用数据.
+                    int notDeleted = (block.data[position] & 0xFF);
+                    if (notDeleted == 0)
+                        continue;
+                    byte[] Record = block.getBytes(position+1, tableInfo.totalLength); //读取表中的每条记录
+                    byte[] key= getColumnValue(tableInfo,indexInfo,Record); //找出索引值
                     thisTree.insert(key, blockOffset, offset); //插入树中
                 }
             }
         }catch(NullPointerException e){
             System.err.println("must not be null for key.");
         }
-        catch(Exception e){
-            System.err.println("the index has not been created.");
-        }
+//        catch(Exception e){
+//            System.err.println("the index has not been created.");
+//            System.err.println(e);
+//        }
 
         indexInfo.rootBlockOffset=thisTree.myRootBlock.blockOffset;
 //        CatalogManager.setIndexRoot(indexInfo.indexName, thisTree.myRootBlock.blockOffset);
+
+        buf.WriteAllToFile();
 
         System.out.println("创建索引成功！");
     }
 
     //删除索引，即删除索引文件
-    public static void dropIndex(String filename ){
+    public void dropIndex(String filename ){
         filename+=".index";
         File file = new File(filename);
 
@@ -83,7 +93,7 @@ public class IndexManager{
     }
 
     //等值查找
-    public static offsetInfo searchEqual(Index indexInfo, byte[] key) throws Exception{
+    public offsetInfo searchEqual(Index indexInfo, byte[] key) throws Exception{
         offsetInfo off;
         try{
             //Index inx=CatalogManager.getIndex(indexInfo.indexName);
@@ -103,7 +113,7 @@ public class IndexManager{
         }
     */
     //插入新索引值，已有索引则更新位置信息
-    static public void insertKey(Index indexInfo,byte[] key,int blockOffset,int offset) throws Exception{
+    public void insertKey(Index indexInfo,byte[] key,int blockOffset,int offset) throws Exception{
         try{
             //Index inx=CatalogManager.getIndex(indexInfo.indexName);
             BPlusTree thisTree=new BPlusTree(indexInfo,buf,indexInfo.rootBlockOffset);//创建树访问结构（但不是新树）
@@ -117,7 +127,7 @@ public class IndexManager{
     }
 
     //删除索引值，没有该索引则什么也不做
-    static public void deleteKey(Index indexInfo,byte[] deleteKey) throws Exception{
+    public void deleteKey(Index indexInfo,byte[] deleteKey) throws Exception{
         try{
             //Index inx=CatalogManager.getIndex(indexInfo.indexName);
             BPlusTree thisTree=new BPlusTree(indexInfo,buf,indexInfo.rootBlockOffset);//创建树访问结构（但不是新树）
@@ -130,9 +140,42 @@ public class IndexManager{
 
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+
         BufferManager bm = new BufferManager();
         IndexManager im = new IndexManager(bm);
+
+        Attribute id = new Attribute("id", -1, true, true);
+        Attribute name = new Attribute("name", 5, false, false);
+        Attribute salary = new Attribute("salary", 0, false, false);
+
+        Table tableInfo = new Table();
+        tableInfo.totalLength = 13;
+        tableInfo.blockNum = 3;
+        tableInfo.attrNum = 3;
+        tableInfo.name = "Person";
+        tableInfo.attributes.add(id);
+        tableInfo.attributes.add(name);
+        tableInfo.attributes.add(salary);
+
+        Index id_index = new Index();
+        id_index.tableName = tableInfo.name;
+        id_index.columnIndex = 0;
+        id_index.indexName = "Person_id";
+        id_index.columnLength = 4;
+
+        im.createIndex(tableInfo, id_index);
+        bm.showBuffer(0, BufferManager.BUFFER_SIZE);
+        System.out.println(id_index.rootBlockOffset);
+        byte[] id_key = new byte[] {0, 0, 0, 2};
+        offsetInfo off = im.searchEqual(id_index, id_key);
+        if (off == null) {
+            System.out.println("not found");
+        }
+        else
+            System.out.println(
+                String.format("offsetInFile:%d, offsetInBlock:%d", off.offsetInfile, off.offsetInBlock)
+        );
     }
 
 }

@@ -14,22 +14,30 @@ class Attribute {
     public int type;
     public int length;
     public boolean isPrimaryKey;
-    public boolean unique;
+    public boolean isUnique;
     public String index;
 
     public Attribute() {
         name = null;
         isPrimaryKey = false;
-        unique = false;
+        isUnique = false;
         index = "";
     }
 
-    public Attribute(String n, int t, int l, boolean isPr, boolean isUn) {
+    public Attribute(String n, int t, boolean isPr, boolean isUn) {
         name = n;
         type = t;
-        length = l;
         isPrimaryKey = isPr;
-        unique = isUn;
+        isUnique = isUn;
+        switch (type) {
+            case -1:
+            case 0:
+                length = 4;
+                break;
+            default:
+                length = type;
+                break;
+        }
     }
 }
 

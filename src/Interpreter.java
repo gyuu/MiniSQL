@@ -46,7 +46,7 @@ public class Interpreter
                     {
                         String attribute_name = word;
                         int type = 0;
-                        boolean unique = false;
+                        boolean isUnique = false;
                         word = get_word(s);
                         if (word.equals("int"))
                             type = 0;
@@ -84,11 +84,11 @@ public class Interpreter
                         word = get_word(s);
                         if (word.equals("unique"))
                         {
-                            unique = true;
+                            isUnique = true;
                             word  = get_word(s);
                         }
                         // problem!!!
-                        Attribute attr = new Attribute(attribute_name, type, 32, false,unique);
+                        Attribute attr = new Attribute(attribute_name, type, false,isUnique);
                         attribute_list.add(attr);
                         if (!word.equals(","))
                         {
@@ -123,7 +123,7 @@ public class Interpreter
                                 {
                                     if (primary_key.equals(attribute_list.get(i).name))
                                     {
-                                        attribute_list.get(i).unique = true;
+                                        attribute_list.get(i).isUnique = true;
                                         break;
                                     }
                                 }
