@@ -1,15 +1,22 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.io.IOException;
 
 public class Interpreter
 {
 
     static int pos=0;
 
-
     public static int interprete(String s)
+        throws TableExistedException, IndexExistedException, Exception
     {
+        BufferManager bm = new BufferManager();
+        IndexManager im = new IndexManager(bm);
+        CatalogManager cm = new CatalogManager(im);
+        RecordManager rm = new RecordManager(bm, cm, im);
+        cm.SetRecordManager(rm);
+
         int tmp = 0;
         String word = "";
 
@@ -41,7 +48,7 @@ public class Interpreter
                 else
                 {
                     word = get_word(s);
-                    List<Attribute> attribute_list = new ArrayList<Attribute>();
+                    ArrayList<Attribute> attribute_list = new ArrayList<Attribute>();
                     while (!word.isEmpty() && !word.equals("primary") && !word.equals(")"))
                     {
                         String attribute_name = word;
@@ -204,7 +211,7 @@ public class Interpreter
                         throw new SyntaxException();
 
                     /* create index */
-                    cm.createIndex(index_name, table_name);
+                    cm.createIndex(index_name, table_name, attribute_name);
 
                     System.out.println("Index created");
                     return 1;
@@ -222,7 +229,7 @@ public class Interpreter
 
         else if (word.equals("select"))
         {
-            List<String> attr_selected = new LinkedList<String>();
+            List<String> attr_selected = new ArrayList<String>();
             String table_name;
             word = get_word(s);
             if (!word.equals("*"))
@@ -267,7 +274,7 @@ public class Interpreter
                 String attr_name = "";
                 String value = "";
                 int operate = Condition.OPERATION_EQUAL;
-                List<Condition> condition_list = new LinkedList<Condition>();
+                ArrayList<Condition> condition_list = new ArrayList<Condition>();
                 word = get_word(s);
                 while (true)
                 {
@@ -393,7 +400,7 @@ public class Interpreter
                 String attr_name = "";
                 String value = "";
                 int operate = Condition.OPERATION_EQUAL;
-                List<Condition> condition_list = new LinkedList<Condition>();
+                List<Condition> condition_list = new ArrayList<Condition>();
                 word = get_word(s);
                 while (true)
                 {
@@ -444,7 +451,7 @@ public class Interpreter
         else if (word.equals("insert"))
         {
             String table_name = "";
-            List<String> value_list = new LinkedList<String>();
+            List<String> value_list = new ArrayList<String>();
             word = get_word(s);
             try{
                 if (!word.equals("into"))
@@ -542,11 +549,14 @@ public class Interpreter
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Scanner in = new Scanner(System.in);
         String quest = "";
         quest = in.nextLine();
-        interprete(quest);
+        try {
+            interprete(quest);
+        }
+        catch (Exception e) {}
     }
 
 }

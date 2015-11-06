@@ -1,4 +1,4 @@
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 // 数据结构都定义在这里, 之后可能找个别的地方放.
@@ -48,7 +48,7 @@ class Table {
     int attrNum;
     int totalLength;
     int nextInsertBlock;
-    List<Attribute> attributes = new LinkedList<>();
+    List<Attribute> attributes = new ArrayList<>();
 
     public Table() {
         blockNum = 0;
@@ -88,10 +88,31 @@ class Index {
     public String tableName;
 
     // 索引属性在 Table.attributes 中的序号.
-    int columnIndex;
-    int columnLength;
+    public int columnIndex;
+    public int columnLength;
     int blockNum;
     int rootBlockOffset;
+
+    public Index() {}
+
+    public Index(String indexName, String tableName) {
+        this.indexName = indexName;
+        this.tableName = tableName;
+        columnIndex = 0;
+        columnLength = 0;
+        blockNum = 0;
+        rootBlockOffset = 0;
+    }
+
+    public Index(String indexName, String tableName, int columnIndex,
+                 int columnLength, int blockNum, int rootBlockOffset) {
+        this.indexName = indexName;
+        this.tableName = tableName;
+        this.columnIndex = columnIndex;
+        this.columnLength = columnLength;
+        this.blockNum = blockNum;
+        this.rootBlockOffset = rootBlockOffset;
+    }
 }
 
 class Data {
@@ -120,3 +141,4 @@ class SyntaxException extends Exception {}
 class TableExistedException extends Exception {}
 class IndexExistedException extends Exception {}
 class TableNotFoundException extends Exception {}
+class AttributeNotFoundException extends Exception {}

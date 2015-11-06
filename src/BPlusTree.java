@@ -956,9 +956,9 @@ class BPlusTree{
     }
 
     public static void main(String[] args) throws IOException {
-        Index index_info = new Index();
-        BufferManager bm = new BufferManager();
-        BPlusTree tree = new BPlusTree(index_info, bm);
+        //Index index_info = new Index();
+        //BufferManager bm = new BufferManager();
+        //BPlusTree tree = new BPlusTree(index_info, bm);
 
     }
 

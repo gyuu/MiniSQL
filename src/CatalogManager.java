@@ -19,10 +19,15 @@ public class CatalogManager {
     private HashMap<String, Table> tables = new HashMap<String, Table>();
     private HashMap<String, Index> indices = new HashMap<String, Index>();
 
-    public BufferManager bm;
-    public IndexManager im;
+    private IndexManager im;
+    private RecordManager rm;
 
-    public CatalogManager() {
+    public void SetRecordManager(RecordManager rm) {
+        this.rm = rm;
+    }
+
+    public CatalogManager(IndexManager im) {
+        this.im = im;
         // Load table catalog from table.json
         JSONParser parser = new JSONParser();
         try {
@@ -63,11 +68,13 @@ public class CatalogManager {
                 JSONObject index = (JSONObject) index_o;
                 String indexName = (String) index.get("indexName");
                 String tableName = (String) index.get("tableName");
-                int column = (int)(long) index.get("column");
+                int columnIndex = (int)(long) index.get("columnIndex");
                 int columnLength = (int)(long) index.get("columnLength");
                 int blockNum = (int)(long) index.get("blockNum");
+                int rootBlockOffset = (int)(long) index.get("rootBlockOffset");
 
-                createIndex(indexName, tableName, column, columnLength, blockNum);
+                createIndex(indexName, tableName, columnIndex,
+                            columnLength, blockNum, rootBlockOffset);
             }
         }
         catch (FileNotFoundException e) {}    // if index.json doesn't exist, ignore the exception
@@ -116,9 +123,10 @@ public class CatalogManager {
             JSONObject indexObj = new JSONObject();
             indexObj.put("indexName", index.indexName);
             indexObj.put("tableName", index.tableName);
-            indexObj.put("column", index.column);
+            indexObj.put("columnIndex", index.columnIndex);
             indexObj.put("columnLength", index.columnLength);
             indexObj.put("blockNum", index.blockNum);
+            indexObj.put("rootBlockOffset", index.rootBlockOffset);
             indexCatalog.add(indexObj);
         }
         try (FileWriter file = new FileWriter("index.json")) {
@@ -129,7 +137,8 @@ public class CatalogManager {
         }
     }
 
-    public void createTable(String tableName, ArrayList<Attribute> attrs) {
+    public void createTable(String tableName, ArrayList<Attribute> attrs)
+        throws TableExistedException {
         if (tableExisted(tableName))
             throw new TableExistedException();
         Table t = new Table(tableName, attrs);
@@ -147,21 +156,33 @@ public class CatalogManager {
         tableNum++;
     }
 
-    public void createIndex(String indexName, String tableName) {
+    public void createIndex(String indexName, String tableName, String attribute_name)
+        throws IndexExistedException, IOException, AttributeNotFoundException,
+               TableNotFoundException {
         if (tableExisted(tableName))
             throw new IndexExistedException();
         Index index = new Index(indexName, tableName);
         Table t = getTable(tableName);
         if (t == null)
             throw new TableNotFoundException();
-        im.createIndex(t, index);
-        indices.put(indexName, index);
-        indexNum++;
+
+        for (int i = 0; i < t.attributes.size(); i++) {
+            if (t.attributes.get(i).name.equals(attribute_name)) {
+                index.columnIndex = i;
+                index.columnLength = t.attributes.get(i).length;
+                im.createIndex(t, index);
+                indices.put(indexName, index);
+                indexNum++;
+                break;
+            }
+        }
+        throw new AttributeNotFoundException();
     }
 
-    public void createIndex(String indexName, String tableName, int column,
-                            int columnLength, int blockNum) {
-        Index index = new Index(indexName, tableName, column, columnLength, blockNum);
+    public void createIndex(String indexName, String tableName, int columnIndex,
+                            int columnLength, int blockNum, int rootBlockOffset) {
+        Index index = new Index(indexName, tableName, columnIndex,
+                                columnLength, blockNum, rootBlockOffset);
         indices.put(indexName, index);
         indexNum++;
     }
@@ -214,6 +235,7 @@ public class CatalogManager {
     }
 
     public static void main(String[] args) {
+        /*
         ArrayList<Attribute> attrs = new ArrayList<Attribute>();
         attrs.add(new Attribute("id", -1, false, false));
         attrs.add(new Attribute("name", 5, false, false));
@@ -228,5 +250,6 @@ public class CatalogManager {
         CatalogManager cm2 = new CatalogManager();
         System.out.println(cm2.tables);
         System.out.println(cm2.indices);
+        */
     }
 }

@@ -13,10 +13,15 @@ public class RecordManager {
     private static final int NOT_EMPTY = 1;
     private static final int EMPTY = 0;
 
-    public BufferManager bm;
-    public CatalogManager cm;
+    private BufferManager bm;
+    private CatalogManager cm;
+    private IndexManager im;
 
-    public RecordManager() {}
+    public RecordManager(BufferManager bm, CatalogManager cm, IndexManager im) {
+        this.bm = bm;
+        this.cm = cm;
+        this.im = im;
+    }
 
     /*
     ** Blocks use the free list structure.
@@ -86,7 +91,7 @@ public class RecordManager {
         block[3] = (byte) recordNum;
     }
 
-    public void insertRecord(String tableName, List<String> row) throws IOException {
+    public void insertRecord(String tableName, List<String> row) throws Exception {
         Table table = cm.getTable(tableName);
         // Get byte array
         byte[] bytesToInsert = new byte[table.totalLength];
@@ -124,6 +129,14 @@ public class RecordManager {
             int nextIndex = getNextInsertIndex(block, table, insertIndex);
             setInsertIndex(block, nextIndex);
             incRecordNum(block);
+
+            // Update index
+            for (Attribute attr : table.attributes) {
+                if (attr.isUnique || attr.isPrimaryKey) {
+                    Index idx = cm.getIndex(attr.index);
+                    im.insertKey(idx, bytesToInsert, table.nextInsertBlock, pos);
+                }
+            }
 
             bn.isWritten = true;
             return;
@@ -323,6 +336,7 @@ public class RecordManager {
     }
 
     public static void main(String[] args) throws IOException {
+        /*
         ArrayList<Attribute> attrs = new ArrayList<Attribute>();
         attrs.add(new Attribute("id", -1, false, false));
         attrs.add(new Attribute("name", 5, false, false));
@@ -355,6 +369,7 @@ public class RecordManager {
         }
         */
 
-        rm.bm.WriteAllToFile();
+        //rm.bm.WriteAllToFile();
+
     }
 }
