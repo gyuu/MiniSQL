@@ -140,6 +140,17 @@ public class IndexManager{
 
     }
 
+    // for test.
+    private void bark(offsetInfo off) {
+        if (off == null) {
+            System.out.println("not found");
+        }
+        else
+            System.out.println(
+                String.format("offsetInFile:%d, offsetInBlock:%d", off.offsetInfile, off.offsetInBlock)
+        );
+    }
+
     public static void main(String[] args) throws Exception {
 
         BufferManager bm = new BufferManager();
@@ -163,19 +174,21 @@ public class IndexManager{
         id_index.columnIndex = 0;
         id_index.indexName = "Person_id";
         id_index.columnLength = 4;
+//        id_index.rootBlockOffset = 2;
 
-        im.createIndex(tableInfo, id_index);
-        bm.showBuffer(0, BufferManager.BUFFER_SIZE);
-        System.out.println(id_index.rootBlockOffset);
-        byte[] id_key = new byte[] {0, 0, 0, 2};
-        offsetInfo off = im.searchEqual(id_index, id_key);
-        if (off == null) {
-            System.out.println("not found");
-        }
-        else
-            System.out.println(
-                String.format("offsetInFile:%d, offsetInBlock:%d", off.offsetInfile, off.offsetInBlock)
-        );
+//         测试等值查找.
+//        im.createIndex(tableInfo, id_index);
+//        System.out.println(id_index.rootBlockOffset);
+//        byte[] id_key = new byte[] {0, 0, 2, 2};
+//        offsetInfo off = im.searchEqual(id_index, id_key);
+//        im.bark(off);
+
+//        byte[] new_key = new byte[] { 0, 0, 2, 3};
+//        offsetInfo off = im.searchEqual(id_index, new_key);
+//        im.bark(off);
+//        im.deleteKey(id_index, new_key);
+//        off = im.searchEqual(id_index, new_key);
+//        im.bark(off);
     }
 
 }

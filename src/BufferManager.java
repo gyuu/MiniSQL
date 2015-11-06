@@ -9,7 +9,7 @@ import static java.lang.System.*;
  */
 public class BufferManager {
     public static final byte EMPTY_FLAG = '@'; // 每条记录开头使用 '@' 表示是否为空.
-    public static final int BUFFER_SIZE = 5; // 现在是 100.
+    public static final int BUFFER_SIZE = 100; // 现在是 100.
     public static final int BLOCK_SIZE = BufferNode.BLOCK_SIZE;
     public BufferNode[] buffer = new BufferNode[BUFFER_SIZE];
 

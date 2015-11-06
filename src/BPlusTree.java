@@ -224,7 +224,7 @@ class BPlusTree{
         }
 
         //插入过程中有时需要对中间节点进行分支，branchKey为要新插入的路标，leftChild为新路标的左子节点（也就是已经存在的节点），rightChild为新路标的右子节点
-        BufferNode branchInsert(byte[] branchKey, Node leftChild, Node rightChild){
+        BufferNode branchInsert(byte[] branchKey, Node leftChild, Node rightChild) throws IOException {
             int keyNum = block.getInt(1, 4);//获取路标数
 
             if(keyNum==0){ //全新节点
@@ -243,7 +243,7 @@ class BPlusTree{
                 int newBlockOffset=myIndexInfo.blockNum;
 //                CatalogManager.addIndexBlockNum(myIndexInfo.indexName);
                 myIndexInfo.blockNum++;
-                BufferNode newBlock=bm.getBufferNode(filename, newBlockOffset);
+                BufferNode newBlock=bm.createBufferNode(filename, newBlockOffset);
                 InternalNode newNode=new InternalNode(newBlock);
 
                 //我们知道新插入路标使超过了上限，也就是现有路标为MAX+1，我们总是为原来的块保留MIN个路标，这样新开的块有MAX+1-MIN个路标
