@@ -50,7 +50,7 @@ public class BufferManager {
         BufferNode node = getIfIsInBuffer(fileName, blockOffset);
         if (node == null) {
             try {
-                node = getEmptyBufferNode();
+                node = getEmptyBufferNodeExcept(fileName);
                 readBlock(fileName, blockOffset, node);
             }
             catch (IOException e){
@@ -62,8 +62,15 @@ public class BufferManager {
     }
 
     // 根据文件名和块偏移, 申请一个块并将其初始化.
+    // 这里我没有实现加锁功能...粗暴地限定了相同文件名的块无法被替换出去.
+    // 加锁功能在 IndexManager 中节点的分裂时用到了.
+    // 节点分裂时要在文件中增加一个块作为新节点.把旧节点中一半的数据复制到新节点中.
+    // 如果没有加锁与文件名相同替换限制, 可能旧节点就被替换出去.
+    // 此时旧节点指向的内存地址与新节点指向的内存地址相同. 指向 buffer 中一个被写回文件且被清空的 BufferNode.
+    // 我们就无法实现从旧节点向新节点拷贝信息的行为.
+    // 将缓冲区开大一些可以减少这种事件发生的概率, 但是不能完全防止, 必须有加锁功能才可以.
     public BufferNode createBufferNode(String fileName, int blockOffset) throws IOException {
-        BufferNode node = getEmptyBufferNode();
+        BufferNode node = getEmptyBufferNodeExcept(fileName);
         node.fileName = fileName;
         node.blockOffset = blockOffset;
         node.isWritten = true;
