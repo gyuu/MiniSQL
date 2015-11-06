@@ -8,8 +8,8 @@ public class IndexManager{
 
     public static BufferManager  buf;
 
-    IndexManager(BufferManager buffer){
-        buf=buffer;
+    public void setBM(BufferManager bm) {
+        buf = bm;
     }
 
     //找出需要插入的索引值

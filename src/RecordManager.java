@@ -17,7 +17,7 @@ public class RecordManager {
     private CatalogManager cm;
     private IndexManager im;
 
-    public RecordManager(BufferManager bm, CatalogManager cm, IndexManager im) {
+    public void setBMCMIM(BufferManager bm, CatalogManager cm, IndexManager im) {
         this.bm = bm;
         this.cm = cm;
         this.im = im;

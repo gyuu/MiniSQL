@@ -7,16 +7,14 @@ public class Interpreter
 {
 
     static int pos=0;
+    private static BufferManager bm;
+    private static IndexManager im;
+    private static CatalogManager cm;
+    private static RecordManager rm;
 
     public static int interprete(String s)
         throws TableExistedException, IndexExistedException, Exception
     {
-        BufferManager bm = new BufferManager();
-        IndexManager im = new IndexManager(bm);
-        CatalogManager cm = new CatalogManager(im);
-        RecordManager rm = new RecordManager(bm, cm, im);
-        cm.SetRecordManager(rm);
-
         int tmp = 0;
         String word = "";
 
@@ -550,13 +548,34 @@ public class Interpreter
     }
 
     public static void main(String[] args) throws IOException {
+        bm = new BufferManager();
+        im = new IndexManager();
+        cm = new CatalogManager();
+        rm = new RecordManager();
+
+        im.setBM(bm);
+        cm.setIMRM(im, rm);
+        rm.setBMCMIM(bm, cm, im);
+
+        System.out.println("Welcome to MiniSQL!");
         Scanner in = new Scanner(System.in);
-        String quest = "";
-        quest = in.nextLine();
+        String quest = "",tmp_quest="";
+        tmp_quest = in.nextLine();
+        while (tmp_quest.charAt(tmp_quest.length()-1) != ';')
+            {
+                quest = quest + tmp_quest;
+                tmp_quest = in.nextLine();
+            }
+        quest = quest + tmp_quest;
+
         try {
             interprete(quest);
         }
         catch (Exception e) {}
+        finally {
+            cm.close();
+            bm.WriteAllToFile();
+        }
     }
 
 }

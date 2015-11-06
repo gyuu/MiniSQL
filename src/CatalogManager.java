@@ -12,8 +12,6 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class CatalogManager {
-    //BufferManager bm = null;
-
     private int tableNum = 0;
     private int indexNum = 0;
     private HashMap<String, Table> tables = new HashMap<String, Table>();
@@ -22,12 +20,12 @@ public class CatalogManager {
     private IndexManager im;
     private RecordManager rm;
 
-    public void SetRecordManager(RecordManager rm) {
+    public void setIMRM(IndexManager im, RecordManager rm) {
+        this.im = im;
         this.rm = rm;
     }
 
-    public CatalogManager(IndexManager im) {
-        this.im = im;
+    public CatalogManager() {
         // Load table catalog from table.json
         JSONParser parser = new JSONParser();
         try {
