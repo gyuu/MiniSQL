@@ -24,11 +24,12 @@ class Attribute {
         index = "";
     }
 
-    public Attribute(String n, int t, boolean isPr, boolean isUn) {
+    public Attribute(String n, int t, boolean isPr, boolean isUn, String idx) {
         name = n;
         type = t;
         isPrimaryKey = isPr;
         isUnique = isUn;
+        index = idx;
         switch (type) {
             case -1:
             case 0:
@@ -46,7 +47,40 @@ class Table {
     int blockNum;
     int attrNum;
     int totalLength;
+    int nextInsertBlock;
     List<Attribute> attributes = new LinkedList<>();
+
+    public Table() {
+        blockNum = 0;
+        attrNum = 0;
+        totalLength = 0;
+        nextInsertBlock = 0;
+    }
+
+    public Table(String name, List<Attribute> attributes) {
+        this.name = name;
+        this.attributes = attributes;
+        blockNum = 0;
+        attrNum = attributes.size();
+        nextInsertBlock = 0;
+        totalLength = 0;
+        for (Attribute attr : attributes) {
+            if (attr.type <= 0)
+                totalLength += 4;
+            else
+                totalLength += attr.type;
+        }
+    }
+
+    public Table(String name, int blockNum, int attrNum, int totalLength,
+                 int nextInsertBlock, List<Attribute> attributes) {
+        this.name = name;
+        this.blockNum = blockNum;
+        this.attrNum = attrNum;
+        this.totalLength = totalLength;
+        this.nextInsertBlock = nextInsertBlock;
+        this.attributes = attributes;
+    }
 }
 
 class Index {
@@ -60,15 +94,29 @@ class Index {
     int rootBlockOffset;
 }
 
-class Row {
-    public List<String> columns;
-}
-
 class Data {
-    public List<Row> rows;
+    public ArrayList<Row> rows;
+
+    public Data() {
+        rows = new ArrayList<Row>();
+    }
+
+    public void add(Row row) {
+        rows.add(row);
+    }
 }
 
+class Row {
+    public String[] columns;
 
-class SyntaxException extends Exception {
+    public Row() {}
 
+    public Row(String[] columns) {
+        this.columns = columns;
+    }
 }
+
+class SyntaxException extends Exception {}
+class TableExistedException extends Exception {}
+class IndexExistedException extends Exception {}
+class TableNotFoundException extends Exception {}

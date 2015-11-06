@@ -1,4 +1,4 @@
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -41,7 +41,7 @@ public class Interpreter
                 else
                 {
                     word = get_word(s);
-                    List<Attribute> attribute_list = new LinkedList<Attribute>();
+                    List<Attribute> attribute_list = new ArrayList<Attribute>();
                     while (!word.isEmpty() && !word.equals("primary") && !word.equals(")"))
                     {
                         String attribute_name = word;
@@ -88,7 +88,7 @@ public class Interpreter
                             word  = get_word(s);
                         }
                         // problem!!!
-                        Attribute attr = new Attribute(attribute_name, type, false,isUnique);
+                        Attribute attr = new Attribute(attribute_name, type, false, isUnique, "");
                         attribute_list.add(attr);
                         if (!word.equals(","))
                         {
@@ -123,6 +123,7 @@ public class Interpreter
                                 {
                                     if (primary_key.equals(attribute_list.get(i).name))
                                     {
+                                        attribute_list.get(i).isPrimaryKey = true;
                                         attribute_list.get(i).isUnique = true;
                                         break;
                                     }
@@ -158,6 +159,9 @@ public class Interpreter
                         System.out.println("Syntax Error: a ) is needed!");
                         return 0;
                     }
+
+                    /* Create table */
+                    cm.createTable(table_name, attribute_list);
 
                     System.out.println("Table is created!");
                     return 1;
@@ -198,6 +202,10 @@ public class Interpreter
                     word = get_word(s);
                     if (word.equals(")"))
                         throw new SyntaxException();
+
+                    /* create index */
+                    cm.createIndex(index_name, table_name);
+
                     System.out.println("Index created");
                     return 1;
                 } catch (SyntaxException e) {
@@ -246,6 +254,8 @@ public class Interpreter
             word = get_word(s);
             if (word.isEmpty())
             {
+                rm.selectRecord(table_name);
+
                 if (attr_selected.size() == 0)
                     System.out.println("Show Record!");
                 else
@@ -296,7 +306,9 @@ public class Interpreter
                         System.out.println("Syntax Error!");
                         return 0;
                     }
+                    rm.selectRecord(table_name, condition_list);
                 }
+
                 if (attr_selected.size() == 0)
                     System.out.println("Selected!");
                 else
@@ -313,6 +325,9 @@ public class Interpreter
                 word = get_word(s);
                 if (!word.isEmpty())
                 {
+                    String tableName = word;
+                    cm.dropTable(tableName);
+
                     System.out.println("Drop table!");
                     return 1;
                 }
@@ -327,6 +342,9 @@ public class Interpreter
                 word = get_word(s);
                 if (!word.isEmpty())
                 {
+                    String indexName = word;
+                    cm.dropIndex(indexName);
+
                     System.out.println("Drop index!");
                     return 1;
                 }
@@ -365,6 +383,8 @@ public class Interpreter
             word = get_word(s);
             if (word.isEmpty())
             {
+                rm.deleteRecord(table_name);
+
                 System.out.println("Delete table!");
                 return 1;
             }
@@ -414,6 +434,8 @@ public class Interpreter
                     }
                 }
 
+                rm.deleteRecord(table_name, condition_list);
+
                 System.out.println("Deleted!");
                 return 1;
             }
@@ -432,7 +454,7 @@ public class Interpreter
                     throw new SyntaxException();
                 table_name = word;
                 word = get_word(s);
-                if (!word.equals("value"))
+                if (!word.equals("values"))
                     throw new SyntaxException();
                 word = get_word(s);
                 if (word.equals("("))
@@ -451,7 +473,8 @@ public class Interpreter
                 System.out.println("Syntax Error!");
                 return 0;
             }
-            System.out.println("Table inserted!");
+            rm.insertRecord(table_name, value_list);
+            System.out.println("Record inserted!");
             return 1;
         }
 
