@@ -58,10 +58,10 @@ public class IndexManager{
         }catch(NullPointerException e){
             System.err.println("must not be null for key.");
         }
-//        catch(Exception e){
-//            System.err.println("the index has not been created.");
-//            System.err.println(e);
-//        }
+        catch(Exception e){
+            System.err.println("the index has not been created.");
+            System.err.println(e);
+        }
 
         indexInfo.rootBlockOffset=thisTree.myRootBlock.blockOffset;
 //        CatalogManager.setIndexRoot(indexInfo.indexName, thisTree.myRootBlock.blockOffset);
