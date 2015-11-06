@@ -92,12 +92,14 @@ class Index {
     public int columnLength;
     int blockNum;
     int rootBlockOffset;
+    int type;
 
     public Index() {}
 
-    public Index(String indexName, String tableName) {
+    public Index(String indexName, String tableName, int type) {
         this.indexName = indexName;
         this.tableName = tableName;
+        this.type = type;
         columnIndex = 0;
         columnLength = 0;
         blockNum = 0;
@@ -105,13 +107,15 @@ class Index {
     }
 
     public Index(String indexName, String tableName, int columnIndex,
-                 int columnLength, int blockNum, int rootBlockOffset) {
+                 int columnLength, int blockNum, int rootBlockOffset,
+                 int type) {
         this.indexName = indexName;
         this.tableName = tableName;
         this.columnIndex = columnIndex;
         this.columnLength = columnLength;
         this.blockNum = blockNum;
         this.rootBlockOffset = rootBlockOffset;
+        this.type = type;
     }
 }
 
