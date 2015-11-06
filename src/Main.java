@@ -89,6 +89,7 @@ class Index {
 
     // 索引属性在 Table.attributes 中的序号.
     public int columnIndex;
+    public int pos;
     public int columnLength;
     int blockNum;
     int rootBlockOffset;
@@ -101,17 +102,19 @@ class Index {
         this.tableName = tableName;
         this.type = type;
         columnIndex = 0;
+        pos = 0;
         columnLength = 0;
         blockNum = 0;
         rootBlockOffset = 0;
     }
 
     public Index(String indexName, String tableName, int columnIndex,
-                 int columnLength, int blockNum, int rootBlockOffset,
-                 int type) {
+                 int pos, int columnLength, int blockNum,
+                 int rootBlockOffset, int type) {
         this.indexName = indexName;
         this.tableName = tableName;
         this.columnIndex = columnIndex;
+        this.pos = pos;
         this.columnLength = columnLength;
         this.blockNum = blockNum;
         this.rootBlockOffset = rootBlockOffset;
@@ -128,6 +131,10 @@ class Data {
 
     public void add(Row row) {
         rows.add(row);
+    }
+
+    public boolean isEmpty() {
+        return rows.isEmpty();
     }
 }
 

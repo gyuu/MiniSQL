@@ -311,9 +311,9 @@ public class Interpreter
                         System.out.println("Syntax Error!");
                         return 0;
                     }
-                    rm.selectRecord(table_name, condition_list);
                 }
 
+                rm.selectRecord(table_name, condition_list);
                 if (attr_selected.size() == 0)
                     System.out.println("Selected!");
                 else
@@ -388,9 +388,12 @@ public class Interpreter
             word = get_word(s);
             if (word.isEmpty())
             {
-                rm.deleteRecord(table_name);
+                int deleteNum = rm.deleteRecord(table_name);
+                if (deleteNum > 0)
+                    System.out.println("Deleted " + deleteNum + " records.");
+                else
+                    System.out.println("Nothing was deleted.");
 
-                System.out.println("Delete table!");
                 return 1;
             }
             else if (word.equals("where"))
@@ -439,9 +442,11 @@ public class Interpreter
                     }
                 }
 
-                rm.deleteRecord(table_name, condition_list);
-
-                System.out.println("Deleted!");
+                int deleteNum = rm.deleteRecord(table_name, condition_list);
+                if (deleteNum > 0)
+                    System.out.println("Deleted " + deleteNum + " records.");
+                else
+                    System.out.println("Nothing was deleted.");
                 return 1;
             }
         }

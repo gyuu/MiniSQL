@@ -67,12 +67,14 @@ public class CatalogManager {
                 String indexName = (String) index.get("indexName");
                 String tableName = (String) index.get("tableName");
                 int columnIndex = (int)(long) index.get("columnIndex");
+                int pos = (int)(long) index.get("pos");
                 int columnLength = (int)(long) index.get("columnLength");
                 int blockNum = (int)(long) index.get("blockNum");
                 int rootBlockOffset = (int)(long) index.get("rootBlockOffset");
+                int type = (int)(long) index.get("type");
 
-                createIndex(indexName, tableName, columnIndex,
-                            columnLength, blockNum, rootBlockOffset);
+                createIndex(indexName, tableName, columnIndex, pos,
+                            columnLength, blockNum, rootBlockOffset, type);
             }
         }
         catch (FileNotFoundException e) {}    // if index.json doesn't exist, ignore the exception
@@ -122,9 +124,11 @@ public class CatalogManager {
             indexObj.put("indexName", index.indexName);
             indexObj.put("tableName", index.tableName);
             indexObj.put("columnIndex", index.columnIndex);
+            indexObj.put("pos", index.pos);
             indexObj.put("columnLength", index.columnLength);
             indexObj.put("blockNum", index.blockNum);
             indexObj.put("rootBlockOffset", index.rootBlockOffset);
+            indexObj.put("type", index.type);
             indexCatalog.add(indexObj);
         }
         try (FileWriter file = new FileWriter("index.json")) {
@@ -168,30 +172,35 @@ public class CatalogManager {
                TableNotFoundException {
         if (indexExisted(indexName))
             throw new IndexExistedException();
-        Index index = new Index(indexName, tableName);
+        Index index = new Index(indexName, tableName, -1);
         Table table = getTable(tableName);
         if (table == null)
             throw new TableNotFoundException();
 
+        int pos = 0;
         for (int i = 0; i < table.attributes.size(); i++) {
             Attribute attr = table.attributes.get(i);
             if (attr.name.equals(attribute_name)) {
                 index.columnIndex = i;
+                index.pos = pos;
                 index.columnLength = attr.length;
+                index.type = attr.type;
                 attr.index = indexName;
                 im.createIndex(table, index);
                 indices.put(indexName, index);
                 indexNum++;
                 return;
             }
+            pos += attr.length;
         }
         throw new AttributeNotFoundException();
     }
 
     public void createIndex(String indexName, String tableName, int columnIndex,
-                            int columnLength, int blockNum, int rootBlockOffset) {
-        Index index = new Index(indexName, tableName, columnIndex,
-                                columnLength, blockNum, rootBlockOffset);
+                             int pos, int columnLength, int blockNum,
+                             int rootBlockOffset, int type) {
+        Index index = new Index(indexName, tableName, columnIndex, pos,
+                                columnLength, blockNum, rootBlockOffset, type);
         indices.put(indexName, index);
         indexNum++;
     }
@@ -202,9 +211,9 @@ public class CatalogManager {
             throw new TableNotFoundException();
         }
 
-        tables.remove(tableName);
         Table table = getTable(tableName);
         rm.dropTable(table);
+        tables.remove(tableName);
         tableNum--;
 
         Iterator it = indices.values().iterator();

@@ -112,9 +112,6 @@ public class RecordManager {
             }
         }
         else {    // char
-            if (!column.startsWith("'") || !column.endsWith("'"))
-                throw new AttributeFormatException();
-            column = column.replaceAll("'", "");
             return column.getBytes();
         }
     }
@@ -141,7 +138,8 @@ public class RecordManager {
         // check uniqueness
         ArrayList<Index> allTableIndices = cm.getAllIndicesOfTable(tableName);
         for (Index idx : allTableIndices) {
-            if (im.searchEqual(idx, bytesToInsert) != null)
+            byte[] key = Arrays.copyOfRange(bytesToInsert, idx.pos, idx.pos + idx.columnLength);
+            if (im.searchEqual(idx, key) != null)
                 throw new UniqueKeyException();
         }
 
@@ -149,7 +147,8 @@ public class RecordManager {
         int recordSize = table.totalLength + POINTER_SIZE;
 
         while (true) {
-            BufferNode bn = bm.getIfIsInBuffer(table.name + ".table", table.nextInsertBlock);
+            //BufferNode bn = bm.getIfIsInBuffer(table.name + ".table", table.nextInsertBlock);
+            BufferNode bn = bm.getBufferNode(table.name + ".table", table.nextInsertBlock);
             if (bn == null)
                 throw new RuntimeException();
             byte[] block = bn.data;
@@ -177,7 +176,9 @@ public class RecordManager {
             for (Attribute attr : table.attributes) {
                 if (!attr.index.equals("")) {    // has index
                     Index idx = cm.getIndex(attr.index);
-                    im.insertKey(idx, bytesToInsert, table.nextInsertBlock, pos);
+                    byte[] key = Arrays.copyOfRange(bytesToInsert,
+                                                    idx.pos, idx.pos + idx.columnLength);
+                    im.insertKey(idx, key, table.nextInsertBlock, pos);
                 }
             }
 
@@ -274,7 +275,9 @@ public class RecordManager {
 
                     // Delete in index
                     for (Index idx : allTableIndices) {
-                        im.deleteKey(idx, recordBytes);
+                        byte[] key = Arrays.copyOfRange(recordBytes,
+                                                        idx.pos, idx.pos + idx.columnLength);
+                        im.deleteKey(idx, key);
                     }
 
                     bn.isWritten = true;
@@ -313,12 +316,12 @@ public class RecordManager {
         return result;
     }
 
-    public Data selectRecord(String tableName) {
+    public void selectRecord(String tableName) {
         ArrayList<Condition> emptyCond = new ArrayList<Condition>();    // Always returns true
-        return selectRecord(tableName, emptyCond);
+        selectRecord(tableName, emptyCond);
     }
 
-    public Data selectRecord(String tableName, ArrayList<Condition> conditions) {
+    public void selectRecord(String tableName, ArrayList<Condition> conditions) {
         Table table = cm.getTable(tableName);
         Data selectResult = new Data();
 
@@ -346,7 +349,34 @@ public class RecordManager {
             }
         }
 
-        return selectResult;
+        displaySelectResult(table, selectResult);
+    }
+
+    private static String join(String[] l, String delimiter) {
+        StringBuilder builder = new StringBuilder();
+        int length = l.length;
+        for (int i = 0; i < length; i++) {
+            if (i < length - 1)
+                builder.append(l[i]).append(delimiter);
+            else
+                builder.append(l[i]);
+        }
+        return builder.toString();
+    }
+
+    private void displaySelectResult(Table table, Data result) {
+        if (result.isEmpty()) {
+            System.out.println("(EMPTY)");
+        }
+        else {
+            String[] attrs = new String[table.attributes.size()];
+            for (int i = 0; i < table.attributes.size(); i++)
+                attrs[i] = table.attributes.get(i).name;
+            System.out.println(join(attrs, "|"));
+            for (Row row : result.rows) {
+                System.out.println(join(row.columns, "|"));
+            }
+        }
     }
 
     public void dropTable(Table table) {
