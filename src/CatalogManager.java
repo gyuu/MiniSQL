@@ -136,14 +136,23 @@ public class CatalogManager {
     }
 
     public void createTable(String tableName, ArrayList<Attribute> attrs)
-        throws TableExistedException {
+        throws TableExistedException, IndexExistedException, IOException,
+               AttributeNotFoundException, TableNotFoundException {
         if (tableExisted(tableName))
             throw new TableExistedException();
         Table t = new Table(tableName, attrs);
         rm.createTable(t);
-        // index
+
         tables.put(tableName, t);
         tableNum++;
+
+        // Create index for primary keys and unique keys
+        for (Attribute attr : attrs) {
+            if (attr.isUnique || attr.isPrimaryKey) {
+                String implicitIndexName = tableName + "_" + attr.name;
+                createIndex(implicitIndexName, tableName, attr.name);
+            }
+        }
     }
 
     public void createTable(String tableName, int blockNum, int attrNum, int totalLength,
@@ -157,21 +166,23 @@ public class CatalogManager {
     public void createIndex(String indexName, String tableName, String attribute_name)
         throws IndexExistedException, IOException, AttributeNotFoundException,
                TableNotFoundException {
-        if (tableExisted(tableName))
+        if (indexExisted(indexName))
             throw new IndexExistedException();
         Index index = new Index(indexName, tableName);
-        Table t = getTable(tableName);
-        if (t == null)
+        Table table = getTable(tableName);
+        if (table == null)
             throw new TableNotFoundException();
 
-        for (int i = 0; i < t.attributes.size(); i++) {
-            if (t.attributes.get(i).name.equals(attribute_name)) {
+        for (int i = 0; i < table.attributes.size(); i++) {
+            Attribute attr = table.attributes.get(i);
+            if (attr.name.equals(attribute_name)) {
                 index.columnIndex = i;
-                index.columnLength = t.attributes.get(i).length;
-                im.createIndex(t, index);
+                index.columnLength = attr.length;
+                attr.index = indexName;
+                im.createIndex(table, index);
                 indices.put(indexName, index);
                 indexNum++;
-                break;
+                return;
             }
         }
         throw new AttributeNotFoundException();
@@ -185,13 +196,17 @@ public class CatalogManager {
         indexNum++;
     }
 
-    public void dropTable(String tableName) {
-        if (tableExisted(tableName)) {
-            tables.remove(tableName);
-            Table table = getTable(tableName);
-            rm.dropTable(table);
-            tableNum--;
+    public void dropTable(String tableName)
+        throws TableNotFoundException {
+        if (!tableExisted(tableName)) {
+            throw new TableNotFoundException();
         }
+
+        tables.remove(tableName);
+        Table table = getTable(tableName);
+        rm.dropTable(table);
+        tableNum--;
+
         Iterator it = indices.values().iterator();
         while (it.hasNext()) {    // Remove all indices that belongs to the table
             Index index = (Index) it.next();
@@ -228,6 +243,22 @@ public class CatalogManager {
     public Index getIndex(String indexName) {
         if (indexExisted(indexName))
             return indices.get(indexName);
+        else
+            return null;
+    }
+
+    public ArrayList<Index> getAllIndicesOfTable(String tableName) {
+            // Get all indices in the table
+        if (tableExisted(tableName)) {
+            Table table = getTable(tableName);
+            ArrayList<Index> allTableIndices = new ArrayList<Index>();
+            for (Attribute attr : table.attributes) {
+                if (!attr.index.equals("")) {    // has index
+                    allTableIndices.add(getIndex(attr.index));
+                }
+            }
+            return allTableIndices;
+        }
         else
             return null;
     }

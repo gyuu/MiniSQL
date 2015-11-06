@@ -91,15 +91,58 @@ public class RecordManager {
         block[3] = (byte) recordNum;
     }
 
-    public void insertRecord(String tableName, List<String> row) throws Exception {
-        Table table = cm.getTable(tableName);
-        // Get byte array
+    private final byte[] getColumnBytes(String column, Attribute attr)
+        throws AttributeFormatException {
+        if (attr.type == -1) {   // int
+            try {
+                int value = Integer.parseInt(column);
+                return ByteBuffer.allocate(4).putInt(value).array();
+            }
+            catch (NumberFormatException e) {
+                throw new AttributeFormatException();
+            }
+        }
+        else if (attr.type == 0) {    // float
+            try {
+                float value = Float.parseFloat(column);
+                return ByteBuffer.allocate(4).putFloat(value).array();
+            }
+            catch (NumberFormatException e) {
+                throw new AttributeFormatException();
+            }
+        }
+        else {    // char
+            if (!column.startsWith("'") || !column.endsWith("'"))
+                throw new AttributeFormatException();
+            column = column.replaceAll("'", "");
+            return column.getBytes();
+        }
+    }
+
+    private final byte[] getInsertBytes(Table table, List<String> row)
+        throws AttributeFormatException, AttributeNumberException {
+        if (row.size() != table.attributes.size())
+            throw new AttributeNumberException();
         byte[] bytesToInsert = new byte[table.totalLength];
         int index = 0;
         for (int i = 0; i < table.attributes.size(); i++) {
             byte[] columnBytes = getColumnBytes(row.get(i), table.attributes.get(i));
             System.arraycopy(columnBytes, 0, bytesToInsert, index, columnBytes.length);
             index += columnBytes.length;
+        }
+        return bytesToInsert;
+    }
+
+    public void insertRecord(String tableName, List<String> row)
+        throws UniqueKeyException, Exception {
+        Table table = cm.getTable(tableName);
+        byte[] bytesToInsert = getInsertBytes(table, row);
+
+        // check uniqueness
+        ArrayList<Index> allTableIndices = cm.getAllIndicesOfTable(tableName);
+        for (Index idx : allTableIndices) {
+            if (im.searchEqual(idx, bytesToInsert) != null)
+                throw new UniqueKeyException();
         }
 
         // Use free list for insertion and deletion
@@ -132,7 +175,7 @@ public class RecordManager {
 
             // Update index
             for (Attribute attr : table.attributes) {
-                if (attr.isUnique || attr.isPrimaryKey) {
+                if (!attr.index.equals("")) {    // has index
                     Index idx = cm.getIndex(attr.index);
                     im.insertKey(idx, bytesToInsert, table.nextInsertBlock, pos);
                 }
@@ -140,21 +183,6 @@ public class RecordManager {
 
             bn.isWritten = true;
             return;
-        }
-    }
-
-    private final byte[] getColumnBytes(String column, Attribute attr) {
-        if (attr.type == -1) {   // int
-            int value = Integer.parseInt(column);
-            return ByteBuffer.allocate(4).putInt(value).array();
-        }
-        else if (attr.type == 0) {    // float
-            float value = Float.parseFloat(column);
-            return ByteBuffer.allocate(4).putFloat(value).array();
-        }
-        else {    // char
-            column = column.replaceAll("'", "");
-            return column.getBytes();
         }
     }
 
@@ -194,12 +222,14 @@ public class RecordManager {
         return false;
     }
 
-    public int deleteRecord(String tableName) {    // delete all
+    public int deleteRecord(String tableName)
+        throws Exception {    // delete all
         ArrayList<Condition> emptyCond = new ArrayList<Condition>();    // Always returns true
         return deleteRecord(tableName, emptyCond);
     }
 
-    public int deleteRecord(String tableName, List<Condition> conditions) {
+    public int deleteRecord(String tableName, List<Condition> conditions)
+        throws Exception {
         Table table = cm.getTable(tableName);
         int count = 0;
 
@@ -211,6 +241,8 @@ public class RecordManager {
             int accessedRecordNum = 0;
             int nextDeleted = getInsertIndex(block);
             int prevDeleted = -1;
+
+            ArrayList<Index> allTableIndices = cm.getAllIndicesOfTable(tableName);
 
             while (accessedRecordNum < recordNum) {
                 int pos = getPositionFromIndex(table, recordIndex);
@@ -239,6 +271,11 @@ public class RecordManager {
                     // there remains some space for insertion
                     if (table.nextInsertBlock > blockOffset)
                         table.nextInsertBlock = blockOffset;
+
+                    // Delete in index
+                    for (Index idx : allTableIndices) {
+                        im.deleteKey(idx, recordBytes);
+                    }
 
                     bn.isWritten = true;
                     count++;

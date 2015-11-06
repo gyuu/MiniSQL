@@ -142,3 +142,6 @@ class TableExistedException extends Exception {}
 class IndexExistedException extends Exception {}
 class TableNotFoundException extends Exception {}
 class AttributeNotFoundException extends Exception {}
+class UniqueKeyException extends Exception {}
+class AttributeNumberException extends Exception {}
+class AttributeFormatException extends Exception {}

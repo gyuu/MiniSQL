@@ -54,9 +54,9 @@ public class Interpreter
                         boolean isUnique = false;
                         word = get_word(s);
                         if (word.equals("int"))
-                            type = 0;
-                        else if (word.equals("float"))
                             type = -1;
+                        else if (word.equals("float"))
+                            type = 0;
                         else if (word.equals("char"))
                         {
                             word = get_word(s);
