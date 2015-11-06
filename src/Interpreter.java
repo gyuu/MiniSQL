@@ -205,7 +205,7 @@ public class Interpreter
                         throw new SyntaxException();
                     attribute_name = word;
                     word = get_word(s);
-                    if (word.equals(")"))
+                    if (!word.equals(")"))
                         throw new SyntaxException();
 
                     /* create index */
@@ -462,7 +462,7 @@ public class Interpreter
                 if (!word.equals("values"))
                     throw new SyntaxException();
                 word = get_word(s);
-                if (word.equals("("))
+                if (!word.equals("("))
                     throw new SyntaxException();
                 word = get_word(s);
                 while (!word.isEmpty() && !word.equals(")"))
@@ -560,21 +560,31 @@ public class Interpreter
         System.out.println("Welcome to MiniSQL!");
         Scanner in = new Scanner(System.in);
         String quest = "",tmp_quest="";
-        tmp_quest = in.nextLine();
-        while (tmp_quest.charAt(tmp_quest.length()-1) != ';')
-            {
-                quest = quest + tmp_quest;
+
+        while (true) {
+            quest = "";
+            tmp_quest = "";
+            pos = 0;
+            int return_code = 0;
+            tmp_quest = in.nextLine();
+            while (tmp_quest.charAt(tmp_quest.length() - 1) != ';') {
+                quest = quest + " " + tmp_quest;
                 tmp_quest = in.nextLine();
             }
-        quest = quest + tmp_quest;
-
-        try {
-            interprete(quest);
-        }
-        catch (Exception e) {}
-        finally {
-            cm.close();
-            bm.WriteAllToFile();
+            quest = quest + " " + tmp_quest;
+            quest = quest.substring(0,quest.length()-1);
+            try {
+                return_code = interprete(quest);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                cm.close();
+                bm.WriteAllToFile();
+            }
+            if (return_code == -1){
+                System.out.println("Bye");
+                return;
+            }
         }
     }
 
