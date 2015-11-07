@@ -149,14 +149,16 @@ class Row {
 }
 
 interface DetailedErrorMessage {
-    void showDetailedErrorMessage();
+    public void DetailedErrorMessage();
 }
 
-class SQLException extends Exception;
+class SQLException extends Exception implements DetailedErrorMessage {
+    public void DetailedErrorMessage() {};
+};
 
-class SyntaxException extends SQLException implements DetailedErrorMessage {}
+class SyntaxException extends SQLException {}
 
-class TableExistedException extends SQLException implements DetailedErrorMessage {
+class TableExistedException extends SQLException {
     private String tableName;
 
     public TableExistedException(String tableName) {
@@ -169,7 +171,7 @@ class TableExistedException extends SQLException implements DetailedErrorMessage
     }
 }
 
-class IndexExistedException extends SQLException implements DetailedErrorMessage {
+class IndexExistedException extends SQLException {
     private String indexName;
 
     public IndexExistedException(String indexName) {
@@ -183,7 +185,7 @@ class IndexExistedException extends SQLException implements DetailedErrorMessage
 
 }
 
-class TableNotFoundException extends SQLException implements DetailedErrorMessage {
+class TableNotFoundException extends SQLException {
     private String tableName;
 
     public TableNotFoundException(String tableName) {
@@ -196,7 +198,7 @@ class TableNotFoundException extends SQLException implements DetailedErrorMessag
     }
 }
 
-class AttributeNotFoundException extends SQLException implements DetailedErrorMessage {
+class AttributeNotFoundException extends SQLException {
     private String attrName;
 
     public AttributeNotFoundException(String attrName) {
@@ -209,7 +211,7 @@ class AttributeNotFoundException extends SQLException implements DetailedErrorMe
     }
 }
 
-class UniqueKeyException extends SQLException implements DetailedErrorMessage {
+class UniqueKeyException extends SQLException {
     private String indexName;
 
     public UniqueKeyException(String indexName) {
@@ -221,7 +223,7 @@ class UniqueKeyException extends SQLException implements DetailedErrorMessage {
         System.out.println("Index name: " + indexName);
     }
 }
-class AttributeNumberException extends SQLException implements DetailedErrorMessage {
+class AttributeNumberException extends SQLException {
     private String tableName;
     private int expectedSize, actualSize;
 
@@ -238,7 +240,7 @@ class AttributeNumberException extends SQLException implements DetailedErrorMess
                            " Actual number: " + actualSize);
     }
 }
-class AttributeFormatException extends SQLException implements AttributeFormatException {
+class AttributeFormatException extends SQLException {
     private String attrName, type, value;
 
     public AttributeFormatException(String attrName, int type, String value) {

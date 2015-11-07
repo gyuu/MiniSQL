@@ -580,6 +580,8 @@ public class Interpreter
             quest = quest.substring(0,quest.length()-1);
             try {
                 return_code = interprete(quest);
+            } catch (SQLException e) {
+                e.DetailedErrorMessage();
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {

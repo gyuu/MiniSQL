@@ -140,7 +140,7 @@ public class RecordManager {
         for (Index idx : allTableIndices) {
             byte[] key = Arrays.copyOfRange(bytesToInsert, idx.pos, idx.pos + idx.columnLength);
             if (im.searchEqual(idx, key) != null)
-                throw new UniqueKeyException(idx.name);
+                throw new UniqueKeyException(idx.indexName);
         }
 
         // Use free list for insertion and deletion
