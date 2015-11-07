@@ -182,6 +182,7 @@ class BPlusTree{
             ByteBuffer buf = ByteBuffer.allocate(8);
             buf.put(buffer1);
             buf.put(buffer2);
+            buf.flip();
             if (keyType == -1){
                 int num1 = buf.getInt();
                 int num2 = buf.getInt();

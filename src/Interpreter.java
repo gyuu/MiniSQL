@@ -1,3 +1,5 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -11,6 +13,8 @@ public class Interpreter
     private static IndexManager im;
     private static CatalogManager cm;
     private static RecordManager rm;
+
+    public static String scriptName;
 
     public static int interprete(String s)
         throws TableExistedException, IndexExistedException, Exception
@@ -492,8 +496,10 @@ public class Interpreter
             return -1;
         else if (word.equals("commit"))
             return 2;
-        else if (word.equals("execfile"))
+        else if (word.equals("execfile")) {
+            scriptName = get_word(s);
             return 3;
+        }
         else
         {
             if (!word.equals(""))
@@ -567,6 +573,7 @@ public class Interpreter
         String quest = "",tmp_quest="";
 
         while (true) {
+            System.out.print("minisql>>");
             quest = "";
             tmp_quest = "";
             pos = 0;
@@ -589,6 +596,29 @@ public class Interpreter
             if (return_code == -1){
                 System.out.println("Bye");
                 return;
+            }
+            else if (return_code == 3) {
+                FileReader f = new FileReader(scriptName);
+                BufferedReader bf = new BufferedReader(f);
+                while ((tmp_quest = bf.readLine()) != null) {
+                    while (tmp_quest.charAt(tmp_quest.length() - 1) != ';') {
+                        tmp_quest = bf.readLine();
+                    }
+                    quest = quest + " " + tmp_quest;
+                    quest = quest.substring(0,quest.length()-1);
+                    try {
+                        return_code = interprete(quest);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        cm.close();
+                        bm.WriteAllToFile();
+                    }
+                    if (return_code == -1){
+                        System.out.println("Bye");
+                        return;
+                    }
+                }
             }
         }
     }
