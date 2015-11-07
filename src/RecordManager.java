@@ -316,13 +316,17 @@ public class RecordManager {
         return result;
     }
 
-    public void selectRecord(String tableName) {
+    public void selectRecord(String tableName)
+        throws TableNotFoundException {
         ArrayList<Condition> emptyCond = new ArrayList<Condition>();    // Always returns true
         selectRecord(tableName, emptyCond);
     }
 
-    public void selectRecord(String tableName, ArrayList<Condition> conditions) {
+    public void selectRecord(String tableName, ArrayList<Condition> conditions)
+        throws TableNotFoundException {
         Table table = cm.getTable(tableName);
+        if (table == null)
+            throw new TableNotFoundException(tableName);
         Data selectResult = new Data();
 
         for (int blockOffset = 0; blockOffset < table.blockNum; blockOffset++) {
