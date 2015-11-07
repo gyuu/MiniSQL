@@ -148,11 +148,114 @@ class Row {
     }
 }
 
-class SyntaxException extends Exception {}
-class TableExistedException extends Exception {}
-class IndexExistedException extends Exception {}
-class TableNotFoundException extends Exception {}
-class AttributeNotFoundException extends Exception {}
-class UniqueKeyException extends Exception {}
-class AttributeNumberException extends Exception {}
-class AttributeFormatException extends Exception {}
+interface DetailedErrorMessage {
+    void showDetailedErrorMessage();
+}
+
+class SQLException extends Exception;
+
+class SyntaxException extends SQLException implements DetailedErrorMessage {}
+
+class TableExistedException extends SQLException implements DetailedErrorMessage {
+    private String tableName;
+
+    public TableExistedException(String tableName) {
+        this.tableName = tableName;
+    }
+
+    public void DetailedErrorMessage() {
+        System.out.println("Error: table existed while creating table");
+        System.out.println("Table name: " + tableName);
+    }
+}
+
+class IndexExistedException extends SQLException implements DetailedErrorMessage {
+    private String indexName;
+
+    public IndexExistedException(String indexName) {
+        this.indexName = indexName;
+    }
+
+    public void DetailedErrorMessage() {
+        System.out.println("Error: index existed while creating index");
+        System.out.println("Index name: " + indexName);
+    }
+
+}
+
+class TableNotFoundException extends SQLException implements DetailedErrorMessage {
+    private String tableName;
+
+    public TableNotFoundException(String tableName) {
+        this.tableName = tableName;
+    }
+
+    public void DetailedErrorMessage() {
+        System.out.println("Error: table not found");
+        System.out.println("Table name: " + tableName);
+    }
+}
+
+class AttributeNotFoundException extends SQLException implements DetailedErrorMessage {
+    private String attrName;
+
+    public AttributeNotFoundException(String attrName) {
+        this.attrName = attrName;
+    }
+
+    public void DetailedErrorMessage() {
+        System.out.println("Error: attribute not found");
+        System.out.println("Attribute name: " + attrName);
+    }
+}
+
+class UniqueKeyException extends SQLException implements DetailedErrorMessage {
+    private String indexName;
+
+    public UniqueKeyException(String indexName) {
+        this.indexName = indexName;
+    }
+
+    public void DetailedErrorMessage() {
+        System.out.println("Error: unique key error");
+        System.out.println("Index name: " + indexName);
+    }
+}
+class AttributeNumberException extends SQLException implements DetailedErrorMessage {
+    private String tableName;
+    private int expectedSize, actualSize;
+
+    public AttributeNumberException(String tableName, int expectedSize, int actualSize) {
+        this.tableName = tableName;
+        this.expectedSize = expectedSize;
+        this.actualSize = actualSize;
+    }
+
+    public void DetailedErrorMessage() {
+        System.out.println("Error: attribute number doesn't match");
+        System.out.println("On table: " + tableName +
+                           " Expected number: " + expectedSize +
+                           " Actual number: " + actualSize);
+    }
+}
+class AttributeFormatException extends SQLException implements AttributeFormatException {
+    private String attrName, type, value;
+
+    public AttributeFormatException(String attrName, int type, String value) {
+        this.attrName = attrName;
+        if (type == -1)
+            this.type = "int";
+        else if (type == 0)
+            this.type = "float";
+        else
+            this.type = "char(" + type + ")";
+        this.value = value;
+    }
+
+    public void DetailedErrorMessage() {
+        System.out.println("Error: attribute format doesn't match");
+        System.out.println("On attribute: " + attrName +
+                           " with type of " + type +
+                           " get value " + value);
+    }
+}

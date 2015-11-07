@@ -99,7 +99,7 @@ public class RecordManager {
                 return ByteBuffer.allocate(4).putInt(value).array();
             }
             catch (NumberFormatException e) {
-                throw new AttributeFormatException();
+                throw new AttributeFormatException(attr.name, attr.type, column);
             }
         }
         else if (attr.type == 0) {    // float
@@ -108,7 +108,7 @@ public class RecordManager {
                 return ByteBuffer.allocate(4).putFloat(value).array();
             }
             catch (NumberFormatException e) {
-                throw new AttributeFormatException();
+                throw new AttributeFormatException(attr.name, attr.type, column);
             }
         }
         else {    // char
@@ -119,7 +119,7 @@ public class RecordManager {
     private final byte[] getInsertBytes(Table table, List<String> row)
         throws AttributeFormatException, AttributeNumberException {
         if (row.size() != table.attributes.size())
-            throw new AttributeNumberException();
+            throw new AttributeNumberException(table.name, table.attributes.size(), row.size());
         byte[] bytesToInsert = new byte[table.totalLength];
         int index = 0;
         for (int i = 0; i < table.attributes.size(); i++) {
@@ -140,7 +140,7 @@ public class RecordManager {
         for (Index idx : allTableIndices) {
             byte[] key = Arrays.copyOfRange(bytesToInsert, idx.pos, idx.pos + idx.columnLength);
             if (im.searchEqual(idx, key) != null)
-                throw new UniqueKeyException();
+                throw new UniqueKeyException(idx.name);
         }
 
         // Use free list for insertion and deletion

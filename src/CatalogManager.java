@@ -143,7 +143,7 @@ public class CatalogManager {
         throws TableExistedException, IndexExistedException, IOException,
                AttributeNotFoundException, TableNotFoundException {
         if (tableExisted(tableName))
-            throw new TableExistedException();
+            throw new TableExistedException(tableName);
         Table t = new Table(tableName, attrs);
         rm.createTable(t);
 
@@ -171,11 +171,11 @@ public class CatalogManager {
         throws IndexExistedException, IOException, AttributeNotFoundException,
                TableNotFoundException {
         if (indexExisted(indexName))
-            throw new IndexExistedException();
+            throw new IndexExistedException(indexName);
         Index index = new Index(indexName, tableName, -1);
         Table table = getTable(tableName);
         if (table == null)
-            throw new TableNotFoundException();
+            throw new TableNotFoundException(tableName);
 
         int pos = 0;
         for (int i = 0; i < table.attributes.size(); i++) {
@@ -193,7 +193,7 @@ public class CatalogManager {
             }
             pos += attr.length;
         }
-        throw new AttributeNotFoundException();
+        throw new AttributeNotFoundException(attribute_name);
     }
 
     public void createIndex(String indexName, String tableName, int columnIndex,
@@ -208,7 +208,7 @@ public class CatalogManager {
     public void dropTable(String tableName)
         throws TableNotFoundException {
         if (!tableExisted(tableName)) {
-            throw new TableNotFoundException();
+            throw new TableNotFoundException(tableName);
         }
 
         Table table = getTable(tableName);
