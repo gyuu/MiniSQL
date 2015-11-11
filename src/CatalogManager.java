@@ -226,12 +226,14 @@ public class CatalogManager {
         }
     }
 
-    public void dropIndex(String indexName) {
-        if (indexExisted(indexName)) {
-            im.dropIndex(indexName);
-            indices.remove(indexName);
-            indexNum--;
-        }
+    public void dropIndex(String indexName)
+        throws IndexNotFoundException {
+        if (!indexExisted(indexName))
+            throw new IndexNotFoundException(indexName);
+
+        im.dropIndex(indexName);
+        indices.remove(indexName);
+        indexNum--;
     }
 
     private boolean indexExisted(String indexName) {
@@ -270,24 +272,5 @@ public class CatalogManager {
         }
         else
             return null;
-    }
-
-    public static void main(String[] args) {
-        /*
-        ArrayList<Attribute> attrs = new ArrayList<Attribute>();
-        attrs.add(new Attribute("id", -1, false, false));
-        attrs.add(new Attribute("name", 5, false, false));
-        attrs.add(new Attribute("salary", 0, false, false));
-
-        CatalogManager cm = new CatalogManager();
-        cm.createTable("person", attrs);
-        cm.createTable("test", attrs);
-        cm.createIndex("person", "id");
-        cm.close();
-
-        CatalogManager cm2 = new CatalogManager();
-        System.out.println(cm2.tables);
-        System.out.println(cm2.indices);
-        */
     }
 }
