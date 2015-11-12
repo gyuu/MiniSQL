@@ -148,11 +148,7 @@ class Row {
     }
 }
 
-interface DetailedErrorMessage {
-    public void DetailedErrorMessage();
-}
-
-class SQLException extends Exception implements DetailedErrorMessage {
+class SQLException extends Exception {
     public void DetailedErrorMessage() {};
 };
 
@@ -195,6 +191,19 @@ class TableNotFoundException extends SQLException {
     public void DetailedErrorMessage() {
         System.out.println("Error: table not found");
         System.out.println("Table name: " + tableName);
+    }
+}
+
+class IndexNotFoundException extends SQLException {
+    private String indexName;
+
+    public IndexNotFoundException(String indexName) {
+        this.indexName = indexName;
+    }
+
+    public void DetailedErrorMessage() {
+        System.out.println("Error: index not found");
+        System.out.println("Index name: " + indexName);
     }
 }
 

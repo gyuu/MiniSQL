@@ -131,8 +131,11 @@ public class RecordManager {
     }
 
     public void insertRecord(String tableName, List<String> row)
-        throws UniqueKeyException, Exception {
+        throws TableNotFoundException, UniqueKeyException, Exception {
         Table table = cm.getTable(tableName);
+        if (table == null)
+            throw new TableNotFoundException(tableName);
+
         byte[] bytesToInsert = getInsertBytes(table, row);
 
         // check uniqueness
@@ -149,8 +152,6 @@ public class RecordManager {
         while (true) {
             //BufferNode bn = bm.getIfIsInBuffer(table.name + ".table", table.nextInsertBlock);
             BufferNode bn = bm.getBufferNode(table.name + ".table", table.nextInsertBlock);
-            if (bn == null)
-                throw new RuntimeException();
             byte[] block = bn.data;
             int insertIndex = getInsertIndex(block);
             int pos = getPositionFromIndex(table, insertIndex);
@@ -224,14 +225,17 @@ public class RecordManager {
     }
 
     public int deleteRecord(String tableName)
-        throws Exception {    // delete all
+        throws TableNotFoundException, Exception {    // delete all
         ArrayList<Condition> emptyCond = new ArrayList<Condition>();    // Always returns true
         return deleteRecord(tableName, emptyCond);
     }
 
     public int deleteRecord(String tableName, List<Condition> conditions)
-        throws Exception {
+        throws TableNotFoundException, Exception {
         Table table = cm.getTable(tableName);
+        if (table == null)
+            throw new TableNotFoundException(tableName);
+
         int count = 0;
 
         for (int blockOffset = 0; blockOffset < table.blockNum; blockOffset++) {
@@ -404,43 +408,5 @@ public class RecordManager {
         catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public static void main(String[] args) throws IOException {
-        /*
-        ArrayList<Attribute> attrs = new ArrayList<Attribute>();
-        attrs.add(new Attribute("id", -1, false, false));
-        attrs.add(new Attribute("name", 5, false, false));
-        attrs.add(new Attribute("salary", 0, false, false));
-        Table table = new Table("Person", attrs);
-
-        RecordManager rm = new RecordManager();
-
-        rm.createTable(table);
-
-        for (int i = 0; i < 258; i++) {
-            ArrayList<String> columns = new ArrayList<String>();
-            columns.add("" + i);
-            columns.add("Alice");
-            columns.add("25.4");
-            rm.insertRecord(table, columns);
-        }
-
-        Condition c = new Condition("id", "4", 0);
-        ArrayList<Condition> cs = new ArrayList<Condition>();
-        cs.add(c);
-
-        /*
-        Data data = rm.selectRecord(table, cs);
-        for (Row row : data.rows) {
-            for (String column : row.columns) {
-                System.out.print(column + " ");
-            }
-            System.out.println("");
-        }
-        */
-
-        //rm.bm.WriteAllToFile();
-
     }
 }
